@@ -1,12 +1,13 @@
-package iterative_reflection.mvp.reflection.internal;
+package iterative_reflection.mvp.reflection.internal.controller;
 
+import iterative_reflection.mvp.reflection.internal.services.ReflectionService;
 import iterative_reflection.mvp.identity.AppUserPrincipal;
 import iterative_reflection.mvp.identity.Role;
-import iterative_reflection.mvp.reflection.internal.ReflectionDtos.QuestionView;
-import iterative_reflection.mvp.reflection.internal.ReflectionDtos.ReflectionView;
-import iterative_reflection.mvp.reflection.internal.ReflectionDtos.SubmitRequest;
-import iterative_reflection.mvp.reflection.internal.ReflectionDtos.VersionView;
-import iterative_reflection.mvp.reflection.internal.ReflectionDtos.SubmitResponse;
+import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.QuestionView;
+import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.ReflectionView;
+import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.SubmitRequest;
+import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.VersionView;
+import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.SubmitResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -23,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-class ReflectionController {
+public class ReflectionController {
 
 	private final ReflectionService service;
 

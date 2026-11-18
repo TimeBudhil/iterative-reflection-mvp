@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.reflection.internal;
+package iterative_reflection.mvp.reflection.internal.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,11 +12,11 @@ import java.time.Instant;
 /** The (student, career) reflection header; versions and answers are written with JDBC. */
 @Entity
 @Table(name = "reflections")
-class ReflectionEntity {
+public class ReflectionEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	Long id;
+	public Long id;
 
 	@Column(name = "student_id", nullable = false)
 	long studentId;
@@ -25,7 +25,7 @@ class ReflectionEntity {
 	long careerId;
 
 	@Column(name = "current_version", nullable = false)
-	int currentVersion;
+	public int currentVersion;
 
 	@Version
 	@Column(nullable = false)
@@ -35,12 +35,12 @@ class ReflectionEntity {
 	Instant createdAt;
 
 	@Column(name = "updated_at", nullable = false)
-	Instant updatedAt;
+	public Instant updatedAt;
 
 	protected ReflectionEntity() {
 	}
 
-	ReflectionEntity(long studentId, long careerId, Instant now) {
+	public ReflectionEntity(long studentId, long careerId, Instant now) {
 		this.studentId = studentId;
 		this.careerId = careerId;
 		this.currentVersion = 1;

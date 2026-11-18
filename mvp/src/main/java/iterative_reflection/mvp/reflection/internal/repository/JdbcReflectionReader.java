@@ -1,5 +1,6 @@
-package iterative_reflection.mvp.reflection.internal;
+package iterative_reflection.mvp.reflection.internal.repository;
 
+import iterative_reflection.mvp.reflection.internal.services.ReflectionService;
 import iterative_reflection.mvp.reflection.PilotReflectionStats;
 import iterative_reflection.mvp.reflection.ReflectionActivity;
 import iterative_reflection.mvp.reflection.ReflectionReader;
@@ -15,7 +16,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
 @Service
-class JdbcReflectionReader implements ReflectionReader {
+public class JdbcReflectionReader implements ReflectionReader {
 
 	private final JdbcClient jdbc;
 

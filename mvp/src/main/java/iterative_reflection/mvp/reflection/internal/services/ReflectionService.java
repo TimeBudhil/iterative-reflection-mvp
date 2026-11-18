@@ -1,16 +1,18 @@
-package iterative_reflection.mvp.reflection.internal;
+package iterative_reflection.mvp.reflection.internal.services;
 
+import iterative_reflection.mvp.reflection.internal.repository.ReflectionRepository;
+import iterative_reflection.mvp.reflection.internal.domain.ReflectionEntity;
 import iterative_reflection.mvp.career.CareerCatalog;
 import iterative_reflection.mvp.career.CareerSummary;
 import iterative_reflection.mvp.reflection.ReflectionSaved;
-import iterative_reflection.mvp.reflection.internal.ReflectionDtos.AnswerInput;
-import iterative_reflection.mvp.reflection.internal.ReflectionDtos.AnswerView;
-import iterative_reflection.mvp.reflection.internal.ReflectionDtos.QuestionView;
-import iterative_reflection.mvp.reflection.internal.ReflectionDtos.ReflectionView;
-import iterative_reflection.mvp.reflection.internal.ReflectionDtos.SubmitRequest;
-import iterative_reflection.mvp.reflection.internal.ReflectionDtos.SubmitResponse;
-import iterative_reflection.mvp.reflection.internal.ReflectionDtos.Verdict;
-import iterative_reflection.mvp.reflection.internal.ReflectionDtos.VersionView;
+import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.AnswerInput;
+import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.AnswerView;
+import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.QuestionView;
+import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.ReflectionView;
+import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.SubmitRequest;
+import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.SubmitResponse;
+import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.Verdict;
+import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.VersionView;
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
@@ -34,7 +36,7 @@ import org.springframework.web.ErrorResponseException;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
-class ReflectionService {
+public class ReflectionService {
 
 	private final JdbcClient jdbc;
 
@@ -55,7 +57,7 @@ class ReflectionService {
 		this.clock = clock;
 	}
 
-	List<QuestionView> activeQuestions() {
+	public List<QuestionView> activeQuestions() {
 		return jdbc.sql("""
 				select id, question_key, version, prompt, open_prompt from reflection_questions
 				where active = true order by display_order, id
@@ -64,7 +66,7 @@ class ReflectionService {
 	}
 
 	@Transactional
-	SubmitResponse submit(long studentId, long careerId, SubmitRequest request) {
+	public SubmitResponse submit(long studentId, long careerId, SubmitRequest request) {
 		CareerSummary career = careers.findCareer(careerId).filter(CareerSummary::active)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 		List<QuestionView> questions = activeQuestions();
@@ -90,7 +92,7 @@ class ReflectionService {
 
 	/** A new version, answered against the currently active questions; replaces the affinity contribution. */
 	@Transactional
-	SubmitResponse edit(long studentId, long careerId, SubmitRequest request) {
+	public SubmitResponse edit(long studentId, long careerId, SubmitRequest request) {
 		ReflectionEntity reflection = reflections.findByStudentIdAndCareerId(studentId, careerId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 		List<QuestionView> questions = activeQuestions();
@@ -110,7 +112,7 @@ class ReflectionService {
 		return new SubmitResponse(reflection.id, careerId, request.verdict(), next);
 	}
 
-	Page<VersionView> versions(long studentId, long careerId, Pageable pageable) {
+	public Page<VersionView> versions(long studentId, long careerId, Pageable pageable) {
 		long reflectionId = reflections.findByStudentIdAndCareerId(studentId, careerId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)).id;
 		long total = jdbc.sql("select count(*) from reflection_versions where reflection_id = :r")
@@ -154,7 +156,7 @@ class ReflectionService {
 		return sum / questions.size();
 	}
 
-	Page<ReflectionView> list(long studentId, Pageable pageable) {
+	public Page<ReflectionView> list(long studentId, Pageable pageable) {
 		long total = jdbc.sql("select count(*) from reflections where student_id = :s").param("s", studentId)
 				.query(Long.class).single();
 		record Header(long id, long careerId, int versionNumber, Verdict verdict, Instant createdAt, Instant updatedAt,
