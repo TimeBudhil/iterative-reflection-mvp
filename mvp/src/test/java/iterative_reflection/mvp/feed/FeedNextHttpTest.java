@@ -59,7 +59,7 @@ class FeedNextHttpTest extends FeedTestSupport {
 		assertThat(first).isEqualTo(order.get(0));
 		reflect(s, first, 7);
 		long second = nextId(s);
-		assertThat(second).isEqualTo(order.get(1));
+		assertThat(second).isNotEqualTo(first).isIn(order);
 		view(s, second, 1).expectStatus().isOk();
 	}
 
@@ -76,7 +76,8 @@ class FeedNextHttpTest extends FeedTestSupport {
 			reflect(s, id, 6);
 			assertThat(served.size()).isLessThanOrEqualTo(expected.size());
 		}
-		assertThat(served).isEqualTo(expected).doesNotContainAnyElementsOf(retired);
+		// ranking/exploration decide the order now; every active career is served exactly once
+		assertThat(served).containsExactlyInAnyOrderElementsOf(expected).doesNotContainAnyElementsOf(retired);
 		next(s).expectStatus().isOk().expectBody()
 				.jsonPath("$.career").isEmpty()
 				.jsonPath("$.exhausted").isEqualTo(true);
