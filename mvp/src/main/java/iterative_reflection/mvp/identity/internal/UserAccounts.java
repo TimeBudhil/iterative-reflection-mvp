@@ -79,6 +79,28 @@ class UserAccounts implements UserService, UserDetailsService {
 		}
 	}
 
+	/** Verifies the current password, stores the new one and clears {@code mustChangePassword}. */
+	@Transactional
+	void changePassword(long id, String currentPassword, String newPassword) {
+		UserEntity user = users.findById(id).orElseThrow();
+		if (!passwordEncoder.matches(currentPassword, user.passwordHash)) {
+			throw problem(HttpStatus.BAD_REQUEST, "Current password is incorrect.");
+		}
+		if (newPassword.getBytes(StandardCharsets.UTF_8).length > 72) {
+			throw problem(HttpStatus.BAD_REQUEST, "Password is too long.");
+		}
+		user.passwordHash = passwordEncoder.encode(newPassword);
+		user.mustChangePassword = false;
+		users.saveAndFlush(user);
+	}
+
+	@Transactional
+	UserSummary updateDisplayName(long id, String displayName) {
+		UserEntity user = users.findById(id).orElseThrow();
+		user.displayName = displayName.trim();
+		return toSummary(users.saveAndFlush(user));
+	}
+
 	@Override
 	@Transactional(readOnly = true)
 	public Optional<UserSummary> findById(long id) {
