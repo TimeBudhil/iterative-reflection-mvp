@@ -2,9 +2,20 @@ package iterative_reflection.mvp.counselor.internal;
 
 import iterative_reflection.mvp.counselor.CounselorProfile;
 import iterative_reflection.mvp.counselor.CounselorService;
+import iterative_reflection.mvp.counselor.CounselorLink;
+import iterative_reflection.mvp.identity.UserService;
+import iterative_reflection.mvp.identity.UserSummary;
 import java.time.Clock;
+import java.time.Instant;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.random.RandomGenerator;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import org.springframework.web.ErrorResponseException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +33,14 @@ class CounselorProfiles implements CounselorService {
 
 	private final Clock clock;
 
-	CounselorProfiles(CounselorProfileRepository profiles, RandomGenerator random, Clock clock) {
+	private final CounselorLinkRepository links;
+
+	private final UserService users;
+
+	CounselorProfiles(CounselorProfileRepository profiles, RandomGenerator random, Clock clock,
+			CounselorLinkRepository links, UserService users) {
+		this.links = links;
+		this.users = users;
 		this.profiles = profiles;
 		this.random = random;
 		this.clock = clock;
@@ -43,6 +61,75 @@ class CounselorProfiles implements CounselorService {
 	@Transactional(readOnly = true)
 	public Optional<CounselorProfile> findByUserId(long userId) {
 		return profiles.findById(userId).map(CounselorProfiles::toProfile);
+	}
+
+	@Override
+	@Transactional
+	public CounselorLink link(long studentId, String code) {
+		String normalized = code.trim().toUpperCase(Locale.ROOT);
+		CounselorProfileEntity profile = profiles.findByJoinCode(normalized).orElse(null);
+		UserSummary counselor = profile == null ? null : users.findById(profile.userId).orElse(null);
+		if (counselor == null || !counselor.active()) {
+			throw problem(HttpStatus.NOT_FOUND, "Unknown join code.");
+		}
+		Instant now = clock.instant();
+		CounselorLinkEntity link = links.findByStudentIdAndCounselorId(studentId, counselor.id()).orElse(null);
+		if (link == null) {
+			link = new CounselorLinkEntity();
+			link.studentId = studentId;
+			link.counselorId = counselor.id();
+		}
+		else if (link.revokedAt == null) {
+			throw problem(HttpStatus.CONFLICT, "Already linked to this counselor.");
+		}
+		link.linkedAt = now;
+		link.revokedAt = null;
+		try {
+			return toLink(links.saveAndFlush(link), counselor);
+		}
+		catch (DataIntegrityViolationException e) {
+			throw problem(HttpStatus.CONFLICT, "Already linked to this counselor.");
+		}
+	}
+
+	@Override
+	@Transactional
+	public void revoke(long studentId, long linkId) {
+		CounselorLinkEntity link = links.findByIdAndStudentIdAndRevokedAtIsNull(linkId, studentId)
+				.orElseThrow(() -> problem(HttpStatus.NOT_FOUND, "No such link."));
+		link.revokedAt = clock.instant();
+		links.save(link);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Page<CounselorLink> linksOf(long studentId, Pageable pageable) {
+		return links.findByStudentIdAndRevokedAtIsNullOrderByIdAsc(studentId, pageable)
+				.map(l -> toLink(l, users.findById(l.counselorId).orElseThrow()));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public boolean canSee(long counselorId, long studentId) {
+		return links.existsByCounselorIdAndStudentIdAndRevokedAtIsNull(counselorId, studentId)
+				&& users.findById(counselorId).map(UserSummary::active).orElse(false);
+	}
+
+	@Override
+	@Transactional
+	public CounselorProfile rotateJoinCode(long counselorId) {
+		CounselorProfileEntity e = profiles.findById(counselorId)
+				.orElseThrow(() -> problem(HttpStatus.NOT_FOUND, "No counselor profile."));
+		e.joinCode = newUniqueCode();
+		return toProfile(profiles.saveAndFlush(e));
+	}
+
+	private static CounselorLink toLink(CounselorLinkEntity l, UserSummary counselor) {
+		return new CounselorLink(l.id, l.counselorId, counselor.displayName(), counselor.active(), l.linkedAt);
+	}
+
+	private static ErrorResponseException problem(HttpStatus status, String detail) {
+		return new ErrorResponseException(status, ProblemDetail.forStatusAndDetail(status, detail), null);
 	}
 
 	/** Collisions are checked up front; the unique constraint backstops a concurrent race. */
