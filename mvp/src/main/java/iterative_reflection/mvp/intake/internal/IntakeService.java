@@ -212,6 +212,17 @@ class IntakeService implements IntakeReader, IntakePromptProvider {
 	}
 
 	@Override
+	public long countPilotStudentsWithIntake(Instant from, Instant to) {
+		return jdbc.sql("""
+				select count(*) from intake_responses i join users u on u.id = i.student_id
+				where u.role = 'STUDENT' and u.active = true and u.demo = false
+				  and (cast(:from as timestamp) is null or u.created_at >= :from)
+				  and (cast(:to as timestamp) is null or u.created_at < :to)
+				""").param("from", from == null ? null : java.sql.Timestamp.from(from))
+				.param("to", to == null ? null : java.sql.Timestamp.from(to)).query(Long.class).single();
+	}
+
+	@Override
 	public Set<Long> studentsWithIntake(Collection<Long> studentIds) {
 		if (studentIds.isEmpty()) {
 			return Set.of();

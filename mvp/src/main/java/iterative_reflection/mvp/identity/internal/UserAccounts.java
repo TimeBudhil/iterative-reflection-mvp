@@ -177,6 +177,12 @@ class UserAccounts implements UserService, UserDetailsService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
+	public long countPilotStudents(Instant from, Instant to) {
+		return users.countPilotStudents(from, to);
+	}
+
+	@Override
 	@Transactional
 	public UserSummary setActive(long userId, boolean active) {
 		UserEntity user = users.findById(userId)

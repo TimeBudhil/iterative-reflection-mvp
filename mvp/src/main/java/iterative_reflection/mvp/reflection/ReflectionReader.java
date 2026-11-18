@@ -20,4 +20,11 @@ public interface ReflectionReader {
 	/** Totals per student, in one query; students with no reflection are absent from the map. */
 	Map<Long, ReflectionActivity> activityOf(Collection<Long> studentIds);
 
+	/**
+	 * Pilot aggregates over active, non-demo STUDENT accounts created in {@code [from, to)} (null bound = open):
+	 * how many have at least {@code minReflections} reflections, and the current-version verdict counts. Two
+	 * aggregate queries; nothing is loaded per student.
+	 */
+	PilotReflectionStats pilotStats(int minReflections, java.time.Instant from, java.time.Instant to);
+
 }

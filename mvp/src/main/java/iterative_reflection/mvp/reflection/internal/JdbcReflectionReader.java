@@ -1,5 +1,6 @@
 package iterative_reflection.mvp.reflection.internal;
 
+import iterative_reflection.mvp.reflection.PilotReflectionStats;
 import iterative_reflection.mvp.reflection.ReflectionActivity;
 import iterative_reflection.mvp.reflection.ReflectionReader;
 import iterative_reflection.mvp.reflection.ReflectionRecord;
@@ -46,6 +47,36 @@ class JdbcReflectionReader implements ReflectionReader {
 								a.prompt(), a.score(), a.openText())).toList(),
 						r.createdAt(), r.updatedAt()))
 				.toList();
+	}
+
+	@Override
+	public PilotReflectionStats pilotStats(int minReflections, java.time.Instant from, java.time.Instant to) {
+		java.sql.Timestamp f = from == null ? null : java.sql.Timestamp.from(from);
+		java.sql.Timestamp t = to == null ? null : java.sql.Timestamp.from(to);
+		String cohort = """
+				 u.role = 'STUDENT' and u.active = true and u.demo = false
+				  and (cast(:from as timestamp) is null or u.created_at >= :from)
+				  and (cast(:to as timestamp) is null or u.created_at < :to)
+				""";
+		long withMin = jdbc.sql("""
+				select count(*) from (
+				  select r.student_id from reflections r join users u on u.id = r.student_id
+				  where""" + cohort + """
+				  group by r.student_id having count(*) >= :min) x
+				""").param("from", f).param("to", t).param("min", minReflections).query(Long.class).single();
+		Map<String, Long> verdicts = new HashMap<>();
+		jdbc.sql("""
+				select v.verdict, count(*) as n
+				from reflections r join users u on u.id = r.student_id
+				  join reflection_versions v on v.reflection_id = r.id and v.version_number = r.current_version
+				where""" + cohort + """
+				group by v.verdict
+				""").param("from", f).param("to", t).query((rs, i) -> {
+					verdicts.put(rs.getString("verdict"), rs.getLong("n"));
+					return 0;
+				}).list();
+		return new PilotReflectionStats(withMin, verdicts.getOrDefault("YES", 0L), verdicts.getOrDefault("MAYBE", 0L),
+				verdicts.getOrDefault("NO", 0L));
 	}
 
 	@Override

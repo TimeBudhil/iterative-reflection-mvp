@@ -12,6 +12,14 @@ interface UserRepository extends JpaRepository<UserEntity, Long> {
 
 	Page<UserEntity> findByRoleOrderByIdDesc(Role role, Pageable pageable);
 
+	@org.springframework.data.jpa.repository.Query("""
+			select count(u) from UserEntity u where u.role = iterative_reflection.mvp.identity.Role.STUDENT
+			  and u.active = true and u.demo = false
+			  and (cast(:from as timestamp) is null or u.createdAt >= :from)
+			  and (cast(:to as timestamp) is null or u.createdAt < :to)""")
+	long countPilotStudents(@org.springframework.data.repository.query.Param("from") java.time.Instant from,
+			@org.springframework.data.repository.query.Param("to") java.time.Instant to);
+
 	boolean existsByEmail(String email);
 
 }
