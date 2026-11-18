@@ -1,11 +1,14 @@
 package iterative_reflection.mvp.feed.internal.services;
 
+import iterative_reflection.mvp.career.CareerCatalog;
+import iterative_reflection.mvp.career.TagView;
 import iterative_reflection.mvp.feed.internal.domain.AffinitySource;
+import iterative_reflection.mvp.feed.internal.domain.FeedRows.TagScore;
+import iterative_reflection.mvp.feed.internal.repository.AffinityRepository;
 import iterative_reflection.mvp.feed.TagAffinity;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,13 +26,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class AffinityApplier {
 
-	private final JdbcClient jdbc;
+	private final AffinityRepository repository;
 
 	private final CareerTags careerTags;
 
-	AffinityApplier(JdbcClient jdbc, CareerTags careerTags) {
-		this.jdbc = jdbc;
+	private final CareerCatalog catalog;
+
+	AffinityApplier(AffinityRepository repository, CareerTags careerTags, CareerCatalog catalog) {
+		this.repository = repository;
 		this.careerTags = careerTags;
+		this.catalog = catalog;
 	}
 
 	/** Replaces the source's rows with {@code delta} on each tag of the career. */
@@ -44,42 +50,26 @@ public class AffinityApplier {
 	@Transactional(propagation = Propagation.MANDATORY)
 	void replace(long studentId, AffinitySource source, long sourceId, Map<Long, Double> deltaByTag) {
 		remove(studentId, source, sourceId);
-		deltaByTag.forEach((tag, delta) -> jdbc.sql("""
-				insert into affinity_contributions (student_id, tag_id, source_type, source_id, delta)
-				values (:s, :t, :type, :id, :d)""").param("s", studentId).param("t", tag)
-				.param("type", source.name()).param("id", sourceId).param("d", delta).update());
+		deltaByTag.forEach((tag, delta) -> repository.insert(studentId, tag, source.name(), sourceId, delta));
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY)
 	void remove(long studentId, AffinitySource source, long sourceId) {
-		jdbc.sql("delete from affinity_contributions where student_id = :s and source_type = :type and source_id = :id")
-				.param("s", studentId).param("type", source.name()).param("id", sourceId).update();
+		repository.delete(studentId, source.name(), sourceId);
 	}
 
 	/** Summed affinity per tag id (tags with no contributions are absent). */
 	public Map<Long, Double> scores(long studentId) {
-		Map<Long, Double> out = new HashMap<>();
-		jdbc.sql("select tag_id, sum(delta) as score from affinity_contributions where student_id = :s group by tag_id")
-				.param("s", studentId).query((rs, i) -> {
-					out.put(rs.getLong("tag_id"), rs.getDouble("score"));
-					return null;
-				}).list();
-		return out;
+		return repository.scores(studentId);
 	}
 
 	List<TagAffinity> top(long studentId, int n) {
-		return jdbc.sql("""
-				select t.id, t.name, c.name as category, sum(a.delta) as score
-				from affinity_contributions a
-				join tags t on t.id = a.tag_id
-				join tag_categories c on c.id = t.category_id
-				where a.student_id = :s
-				group by t.id, t.name, c.name
-				order by score desc, t.id
-				limit :n""").param("s", studentId).param("n", Math.max(n, 0))
-				.query((rs, i) -> new TagAffinity(rs.getLong("id"), rs.getString("name"), rs.getString("category"),
-						rs.getDouble("score")))
-				.list();
+		List<TagScore> scores = repository.top(studentId, n);
+		Map<Long, TagView> tags = catalog.tagsByIds(scores.stream().map(TagScore::tagId).toList());
+		return scores.stream().filter(s -> tags.containsKey(s.tagId()))
+				.map(s -> new TagAffinity(s.tagId(), tags.get(s.tagId()).name(), tags.get(s.tagId()).category(),
+						s.score()))
+				.toList();
 	}
 
 }

@@ -21,6 +21,9 @@ public interface CareerCatalog {
 	/** Careers started and last page-view time per student, in one query; students with no progress are absent. */
 	java.util.Map<Long, ViewActivity> viewActivityOf(java.util.Collection<Long> studentIds);
 
+	/** The tags with these ids (unknown ids are absent), one query. */
+	java.util.Map<Long, TagView> tagsByIds(java.util.Collection<Long> tagIds);
+
 	/** Every taxonomy tag (all categories, clusters included), ordered by category then name. */
 	List<TagView> allTags();
 

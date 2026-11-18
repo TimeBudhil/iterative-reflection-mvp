@@ -84,6 +84,20 @@ public class JdbcCareerCatalog implements CareerCatalog {
 	}
 
 	@Override
+	public java.util.Map<Long, TagView> tagsByIds(java.util.Collection<Long> tagIds) {
+		java.util.Map<Long, TagView> out = new java.util.HashMap<>();
+		if (tagIds.isEmpty()) {
+			return out;
+		}
+		jdbc.sql("""
+				select t.id, t.name, tc.name as category from tags t join tag_categories tc on tc.id = t.category_id
+				where t.id in (:ids)""").param("ids", tagIds)
+				.query((rs, n) -> new TagView(rs.getLong("id"), rs.getString("category"), rs.getString("name")))
+				.list().forEach(t -> out.put(t.id(), t));
+		return out;
+	}
+
+	@Override
 	public List<TagView> allTags() {
 		return jdbc.sql("""
 				select t.id, t.name, tc.name as category from tags t join tag_categories tc on tc.id = t.category_id

@@ -1,6 +1,8 @@
 package iterative_reflection.mvp.feed.internal.services;
 
 import iterative_reflection.mvp.feed.internal.domain.CardPicker;
+import iterative_reflection.mvp.feed.internal.repository.AbandonRepository;
+import iterative_reflection.mvp.feed.internal.repository.FeedStateRepository;
 import iterative_reflection.mvp.career.CareerCatalog;
 import iterative_reflection.mvp.career.CareerSummary;
 import iterative_reflection.mvp.feed.AbandonActivity;
@@ -9,7 +11,6 @@ import iterative_reflection.mvp.feed.FeedCard;
 import iterative_reflection.mvp.feed.FeedService;
 import iterative_reflection.mvp.feed.TagAffinity;
 import iterative_reflection.mvp.reflection.ReflectionReader;
-import java.sql.Timestamp;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,6 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
 /**
@@ -27,7 +27,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class FeedStateService implements FeedService {
 
-	private final JdbcClient jdbc;
+	private final FeedStateRepository feedState;
+
+	private final AbandonRepository abandonRows;
 
 	private final CareerCatalog catalog;
 
@@ -41,11 +43,12 @@ public class FeedStateService implements FeedService {
 
 	private final AbandonService abandons;
 
-	FeedStateService(JdbcClient jdbc, CareerCatalog catalog, ReflectionReader reflections, CardPicker picker,
+	FeedStateService(FeedStateRepository feedState, AbandonRepository abandonRows, CareerCatalog catalog, ReflectionReader reflections, CardPicker picker,
 			Clock clock, AffinityApplier affinity, AbandonService abandons) {
 		this.abandons = abandons;
 		this.affinity = affinity;
-		this.jdbc = jdbc;
+		this.feedState = feedState;
+		this.abandonRows = abandonRows;
 		this.catalog = catalog;
 		this.reflections = reflections;
 		this.picker = picker;
@@ -70,9 +73,7 @@ public class FeedStateService implements FeedService {
 			return FeedCard.noneLeft();
 		}
 		try {
-			jdbc.sql("insert into feed_state (student_id, career_id, served_at) values (:s, :c, :t)")
-					.param("s", studentId).param("c", picked.get().id())
-					.param("t", Timestamp.from(clock.instant())).update();
+			feedState.insert(studentId, picked.get().id(), clock.instant());
 			return FeedCard.of(picked.get());
 		}
 		catch (DuplicateKeyException lostRace) {
@@ -102,17 +103,10 @@ public class FeedStateService implements FeedService {
 	@Override
 	public Map<Long, AbandonActivity> abandonActivityOf(java.util.Collection<Long> studentIds) {
 		Map<Long, AbandonActivity> result = new java.util.HashMap<>();
-		if (studentIds.isEmpty()) {
-			return result;
+		if (!studentIds.isEmpty()) {
+			abandonRows.summaryOf(studentIds).forEach(
+					s -> result.put(s.studentId(), new AbandonActivity(s.total(), s.lastAbandonedAt())));
 		}
-		jdbc.sql("""
-				select student_id, count(*) as total, max(abandoned_at) as last_at
-				from abandons where student_id in (:ids) group by student_id
-				""").param("ids", studentIds).query((rs, n) -> {
-					result.put(rs.getLong("student_id"),
-							new AbandonActivity(rs.getInt("total"), rs.getTimestamp("last_at").toInstant()));
-					return 0;
-				}).list();
 		return result;
 	}
 
@@ -137,13 +131,11 @@ public class FeedStateService implements FeedService {
 	}
 
 	void clear(long studentId, long careerId) {
-		jdbc.sql("delete from feed_state where student_id = :s and career_id = :c").param("s", studentId)
-				.param("c", careerId).update();
+		feedState.delete(studentId, careerId);
 	}
 
 	private Optional<Long> storedCareerId(long studentId) {
-		return jdbc.sql("select career_id from feed_state where student_id = :s").param("s", studentId)
-				.query(Long.class).optional();
+		return feedState.storedCareerId(studentId);
 	}
 
 }
