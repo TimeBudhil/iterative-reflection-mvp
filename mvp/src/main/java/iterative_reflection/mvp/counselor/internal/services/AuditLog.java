@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.counselor.internal;
+package iterative_reflection.mvp.counselor.internal.services;
 
 import iterative_reflection.mvp.counselor.AuditEntry;
 import java.sql.Timestamp;
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Append-only record of counselor detail reads [R8.6]. */
 @Service
-class AuditLog {
+public class AuditLog {
 
 	private final JdbcClient jdbc;
 

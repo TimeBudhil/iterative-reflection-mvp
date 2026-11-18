@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.counselor.internal;
+package iterative_reflection.mvp.counselor.internal.controller;
 
 import iterative_reflection.mvp.counselor.CounselorService;
 import iterative_reflection.mvp.identity.AppUserPrincipal;
@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-class CounselorMeController {
+public class CounselorMeController {
 
 	record CounselorMeResponse(long id, String email, String displayName, String joinCode) {
 	}

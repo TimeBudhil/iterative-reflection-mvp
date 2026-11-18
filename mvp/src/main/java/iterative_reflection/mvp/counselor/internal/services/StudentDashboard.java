@@ -1,5 +1,6 @@
-package iterative_reflection.mvp.counselor.internal;
+package iterative_reflection.mvp.counselor.internal.services;
 
+import iterative_reflection.mvp.counselor.internal.repository.CounselorLinkRepository;
 import iterative_reflection.mvp.career.CareerCatalog;
 import iterative_reflection.mvp.career.ViewActivity;
 import iterative_reflection.mvp.counselor.CounselorService;
@@ -33,16 +34,16 @@ import org.springframework.web.ErrorResponseException;
  * {@code @Transactional}: the audit row is written in its own transaction and must never be tied to the read.
  */
 @Service
-class StudentDashboard {
+public class StudentDashboard {
 
 	static final int TOP_AFFINITIES = 5;
 
-	record Row(long studentId, String displayName, int careersSeen, int reflected, int abandoned, int yes, int maybe,
+	public record Row(long studentId, String displayName, int careersSeen, int reflected, int abandoned, int yes, int maybe,
 			int no, boolean intakeCompleted, Instant lastActive) {
 	}
 
 	/** The full read-only picture of one student. */
-	record Detail(long studentId, String displayName, List<ReflectionRecord> reflections,
+	public record Detail(long studentId, String displayName, List<ReflectionRecord> reflections,
 			List<AbandonedCareer> abandonedCareers, List<TagAffinity> topAffinities, IntakeView intake) {
 	}
 
@@ -79,7 +80,7 @@ class StudentDashboard {
 	 * then answers 403 unless the counselor may see the student. An unknown student id is indistinguishable from an
 	 * unlinked one.
 	 */
-	Detail detail(long counselorId, long studentId) {
+	public Detail detail(long counselorId, long studentId) {
 		boolean allowed = counselors.canSee(counselorId, studentId);
 		audit.record(counselorId, studentId, allowed);
 		if (!allowed) {
@@ -96,7 +97,7 @@ class StudentDashboard {
 	 * every student's activity, so the whole (small, per-counselor) set is summarised and then sliced. A deactivated
 	 * counselor sees nothing, like {@link CounselorService#canSee}.
 	 */
-	Page<Row> students(long counselorId, Pageable pageable) {
+	public Page<Row> students(long counselorId, Pageable pageable) {
 		boolean active = users.findById(counselorId).map(UserSummary::active).orElse(false);
 		List<Long> ids = active ? links.findActiveStudentIds(counselorId) : List.of();
 		Map<Long, ViewActivity> views = careers.viewActivityOf(ids);

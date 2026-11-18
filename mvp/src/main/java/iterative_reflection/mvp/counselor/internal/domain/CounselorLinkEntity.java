@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.counselor.internal;
+package iterative_reflection.mvp.counselor.internal.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,22 +10,22 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "counselor_links")
-class CounselorLinkEntity {
+public class CounselorLinkEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	Long id;
+	public Long id;
 
 	@Column(name = "student_id", nullable = false)
-	long studentId;
+	public long studentId;
 
 	@Column(name = "counselor_id", nullable = false)
-	long counselorId;
+	public long counselorId;
 
 	@Column(name = "linked_at", nullable = false)
-	Instant linkedAt;
+	public Instant linkedAt;
 
 	@Column(name = "revoked_at")
-	Instant revokedAt;
+	public Instant revokedAt;
 
 }

@@ -1,5 +1,6 @@
-package iterative_reflection.mvp.counselor.internal;
+package iterative_reflection.mvp.counselor.internal.controller;
 
+import iterative_reflection.mvp.counselor.internal.services.StudentDashboard;
 import iterative_reflection.mvp.identity.AppUserPrincipal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** Read-only counselor dashboard. Every route here must be GET (R8.4). */
 @RestController
-class CounselorStudentsController {
+public class CounselorStudentsController {
 
 	private final StudentDashboard dashboard;
 

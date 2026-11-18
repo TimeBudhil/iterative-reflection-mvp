@@ -1,5 +1,6 @@
-package iterative_reflection.mvp.counselor.internal;
+package iterative_reflection.mvp.counselor.internal.controller;
 
+import iterative_reflection.mvp.counselor.internal.services.LinkAttemptLimiter;
 import iterative_reflection.mvp.counselor.CounselorLink;
 import iterative_reflection.mvp.counselor.CounselorService;
 import iterative_reflection.mvp.identity.AppUserPrincipal;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** A student's own counselor links: link by join code, list, revoke (R2.2-R2.6). */
 @RestController
-class StudentLinksController {
+public class StudentLinksController {
 
 	record LinkRequest(@NotBlank @Size(max = 32) String code) {
 	}

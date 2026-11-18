@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.counselor.internal;
+package iterative_reflection.mvp.counselor.internal.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,16 +8,16 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "counselor_profiles")
-class CounselorProfileEntity {
+public class CounselorProfileEntity {
 
 	@Id
 	@Column(name = "user_id")
-	Long userId;
+	public Long userId;
 
 	@Column(name = "join_code", nullable = false)
-	String joinCode;
+	public String joinCode;
 
 	@Column(name = "created_at", nullable = false)
-	Instant createdAt;
+	public Instant createdAt;
 
 }

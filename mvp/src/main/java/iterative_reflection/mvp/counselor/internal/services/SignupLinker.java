@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.counselor.internal;
+package iterative_reflection.mvp.counselor.internal.services;
 
 import iterative_reflection.mvp.counselor.CounselorService;
 import iterative_reflection.mvp.identity.StudentSignedUp;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
  * an unknown code throws 404 and the account is never created.
  */
 @Component
-class SignupLinker {
+public class SignupLinker {
 
 	private final CounselorService counselors;
 

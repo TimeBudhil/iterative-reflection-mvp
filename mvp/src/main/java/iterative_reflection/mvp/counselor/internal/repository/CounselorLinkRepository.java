@@ -1,11 +1,12 @@
-package iterative_reflection.mvp.counselor.internal;
+package iterative_reflection.mvp.counselor.internal.repository;
 
+import iterative_reflection.mvp.counselor.internal.domain.CounselorLinkEntity;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-interface CounselorLinkRepository extends JpaRepository<CounselorLinkEntity, Long> {
+public interface CounselorLinkRepository extends JpaRepository<CounselorLinkEntity, Long> {
 
 	Optional<CounselorLinkEntity> findByStudentIdAndCounselorId(long studentId, long counselorId);
 

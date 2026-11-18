@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.counselor.internal;
+package iterative_reflection.mvp.counselor.internal.services;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  * Counters reset on restart.
  */
 @Component
-class LinkAttemptLimiter {
+public class LinkAttemptLimiter {
 
 	private static final long WINDOW_SECONDS = Duration.ofMinutes(15).toSeconds();
 
@@ -28,12 +28,12 @@ class LinkAttemptLimiter {
 		this.maxFailures = maxFailures;
 	}
 
-	boolean isBlocked(long studentId) {
+	public boolean isBlocked(long studentId) {
 		AtomicInteger c = counters.get(window() + "|" + studentId);
 		return c != null && c.get() >= maxFailures;
 	}
 
-	void recordFailure(long studentId) {
+	public void recordFailure(long studentId) {
 		long window = window();
 		counters.keySet().removeIf(key -> Long.parseLong(key.substring(0, key.indexOf('|'))) < window);
 		counters.computeIfAbsent(window + "|" + studentId, k -> new AtomicInteger()).incrementAndGet();

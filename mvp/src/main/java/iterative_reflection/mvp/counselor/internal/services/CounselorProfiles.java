@@ -1,5 +1,9 @@
-package iterative_reflection.mvp.counselor.internal;
+package iterative_reflection.mvp.counselor.internal.services;
 
+import iterative_reflection.mvp.counselor.internal.domain.CounselorLinkEntity;
+import iterative_reflection.mvp.counselor.internal.repository.CounselorProfileRepository;
+import iterative_reflection.mvp.counselor.internal.domain.CounselorProfileEntity;
+import iterative_reflection.mvp.counselor.internal.repository.CounselorLinkRepository;
 import iterative_reflection.mvp.counselor.CounselorProfile;
 import iterative_reflection.mvp.counselor.CounselorService;
 import iterative_reflection.mvp.counselor.CounselorLink;
@@ -21,7 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-class CounselorProfiles implements CounselorService {
+public class CounselorProfiles implements CounselorService {
 
 	/** 32 characters: no 0/O or 1/I (R2.1). */
 	static final String ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
