@@ -1,6 +1,5 @@
-package iterative_reflection.mvp.reflection.internal.repository;
+package iterative_reflection.mvp.reflection.internal.services;
 
-import iterative_reflection.mvp.reflection.internal.services.ReflectionService;
 import iterative_reflection.mvp.reflection.PilotReflectionStats;
 import iterative_reflection.mvp.reflection.ReflectionActivity;
 import iterative_reflection.mvp.reflection.ReflectionReader;

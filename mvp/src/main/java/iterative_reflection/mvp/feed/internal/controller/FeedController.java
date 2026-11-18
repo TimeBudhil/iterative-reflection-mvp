@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.feed.internal;
+package iterative_reflection.mvp.feed.internal.controller;
 
 import iterative_reflection.mvp.career.CareerCatalog;
 import iterative_reflection.mvp.career.CareerSummary;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-class FeedController {
+public class FeedController {
 
 	private final FeedService feed;
 

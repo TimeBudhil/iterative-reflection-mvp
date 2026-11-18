@@ -1,7 +1,7 @@
 package iterative_reflection.mvp.career.internal.services;
 
 import iterative_reflection.mvp.career.CareerSummary;
-import iterative_reflection.mvp.career.internal.dto.ExperienceResponse;
+import iterative_reflection.mvp.career.internal.domain.CareerPage;
 import iterative_reflection.mvp.career.internal.repository.JdbcCareerCatalog;
 import java.util.List;
 import java.util.Optional;
@@ -25,7 +25,7 @@ public class CareerService {
 		return catalog.lastViewedPage(studentId, careerId);
 	}
 
-	public List<ExperienceResponse.Page> pages(long careerId) {
+	public List<CareerPage> pages(long careerId) {
 		return catalog.pages(careerId);
 	}
 

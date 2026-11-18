@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.feed.internal;
+package iterative_reflection.mvp.feed.internal.integration;
 
 import iterative_reflection.mvp.feed.FeedService;
 import iterative_reflection.mvp.identity.AppUserPrincipal;
@@ -23,7 +23,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * in-progress one gives 409. Ticket 12's abandon endpoint should be added to the path patterns.
  */
 @Configuration
-class InProgressGuard implements WebMvcConfigurer {
+public class InProgressGuard implements WebMvcConfigurer {
 
 	private final FeedService feed;
 

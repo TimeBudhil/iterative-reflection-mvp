@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.feed.internal;
+package iterative_reflection.mvp.feed.internal.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;

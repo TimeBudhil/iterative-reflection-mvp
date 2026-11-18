@@ -1,5 +1,6 @@
-package iterative_reflection.mvp.feed.internal;
+package iterative_reflection.mvp.feed.internal.services;
 
+import iterative_reflection.mvp.feed.internal.domain.AffinitySource;
 import iterative_reflection.mvp.feed.TagAffinity;
 import java.util.HashMap;
 import java.util.List;
@@ -20,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
  * (source id = abandon id), 13 uses INTAKE with {@link #replace} (tags chosen in intake).
  */
 @Component
-class AffinityApplier {
+public class AffinityApplier {
 
 	private final JdbcClient jdbc;
 
@@ -56,7 +57,7 @@ class AffinityApplier {
 	}
 
 	/** Summed affinity per tag id (tags with no contributions are absent). */
-	Map<Long, Double> scores(long studentId) {
+	public Map<Long, Double> scores(long studentId) {
 		Map<Long, Double> out = new HashMap<>();
 		jdbc.sql("select tag_id, sum(delta) as score from affinity_contributions where student_id = :s group by tag_id")
 				.param("s", studentId).query((rs, i) -> {

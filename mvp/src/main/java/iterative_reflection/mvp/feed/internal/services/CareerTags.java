@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.feed.internal;
+package iterative_reflection.mvp.feed.internal.services;
 
 import iterative_reflection.mvp.career.CareerCatalog;
 import iterative_reflection.mvp.career.TagView;
@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 /** Tag ids of a career via the public career API. */
 @Component
-class CareerTags {
+public class CareerTags {
 
 	private final CareerCatalog catalog;
 

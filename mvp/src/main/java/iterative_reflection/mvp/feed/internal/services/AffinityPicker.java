@@ -1,4 +1,7 @@
-package iterative_reflection.mvp.feed.internal;
+package iterative_reflection.mvp.feed.internal.services;
+
+import iterative_reflection.mvp.feed.internal.domain.CardPicker;
+import iterative_reflection.mvp.feed.internal.domain.FeedProperties;
 
 import iterative_reflection.mvp.career.CareerSummary;
 import iterative_reflection.mvp.reflection.ReflectionReader;
@@ -14,7 +17,7 @@ import org.springframework.stereotype.Component;
  * The slot counter is derived, never stored.
  */
 @Component
-class AffinityPicker implements CardPicker {
+public class AffinityPicker implements CardPicker {
 
 	private static final double EPSILON = 1e-9;
 

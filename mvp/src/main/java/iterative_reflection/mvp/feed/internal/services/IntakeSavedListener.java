@@ -1,5 +1,7 @@
-package iterative_reflection.mvp.feed.internal;
+package iterative_reflection.mvp.feed.internal.services;
 
+import iterative_reflection.mvp.feed.internal.domain.AffinitySource;
+import iterative_reflection.mvp.feed.internal.domain.AffinityProperties;
 import iterative_reflection.mvp.intake.IntakeSaved;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,7 +13,7 @@ import org.springframework.stereotype.Component;
  * Replaces (not adds to) the intake's previous seeding, so editing never double counts [R7.4].
  */
 @Component
-class IntakeSavedListener {
+public class IntakeSavedListener {
 
 	private final AffinityApplier affinity;
 

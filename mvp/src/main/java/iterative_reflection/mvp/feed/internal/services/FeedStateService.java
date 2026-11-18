@@ -1,5 +1,6 @@
-package iterative_reflection.mvp.feed.internal;
+package iterative_reflection.mvp.feed.internal.services;
 
+import iterative_reflection.mvp.feed.internal.domain.CardPicker;
 import iterative_reflection.mvp.career.CareerCatalog;
 import iterative_reflection.mvp.career.CareerSummary;
 import iterative_reflection.mvp.feed.AbandonActivity;
@@ -24,7 +25,7 @@ import org.springframework.stereotype.Service;
  * by re-reading the winner's card (a failed insert would poison a surrounding Postgres transaction).
  */
 @Service
-class FeedStateService implements FeedService {
+public class FeedStateService implements FeedService {
 
 	private final JdbcClient jdbc;
 

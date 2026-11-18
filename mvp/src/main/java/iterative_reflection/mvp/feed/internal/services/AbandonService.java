@@ -1,5 +1,7 @@
-package iterative_reflection.mvp.feed.internal;
+package iterative_reflection.mvp.feed.internal.services;
 
+import iterative_reflection.mvp.feed.internal.domain.AffinitySource;
+import iterative_reflection.mvp.feed.internal.domain.AffinityProperties;
 import iterative_reflection.mvp.career.CareerCatalog;
 import iterative_reflection.mvp.career.CareerSummary;
 import iterative_reflection.mvp.feed.AbandonedCareer;
@@ -23,7 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
  * penalty again [R4.7, R4.8, R6.7].
  */
 @Service
-class AbandonService implements AbandonCounter {
+public class AbandonService implements AbandonCounter {
 
 	private final JdbcClient jdbc;
 

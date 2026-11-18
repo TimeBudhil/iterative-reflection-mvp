@@ -1,6 +1,7 @@
 package iterative_reflection.mvp.career.internal.repository;
 
-import iterative_reflection.mvp.career.internal.dto.ExperienceResponse;
+import iterative_reflection.mvp.career.internal.domain.CareerPage;
+import iterative_reflection.mvp.career.internal.domain.ContentBlock;
 import iterative_reflection.mvp.career.CareerCatalog;
 import iterative_reflection.mvp.career.CareerSummary;
 import iterative_reflection.mvp.career.TagView;
@@ -116,18 +117,18 @@ public class JdbcCareerCatalog implements CareerCatalog {
 	}
 
 	/** Experience content: pages with blocks, in order. */
-	public List<ExperienceResponse.Page> pages(long careerId) {
-		Map<Long, ExperienceResponse.Page> pages = new LinkedHashMap<>();
+	public List<CareerPage> pages(long careerId) {
+		Map<Long, CareerPage> pages = new LinkedHashMap<>();
 		jdbc.sql("select id, page_number, title from career_pages where career_id = :c order by page_number")
 				.param("c", careerId).query((rs, n) -> {
-					pages.put(rs.getLong("id"), new ExperienceResponse.Page(rs.getInt("page_number"),
+					pages.put(rs.getLong("id"), new CareerPage(rs.getInt("page_number"),
 							rs.getString("title"), new ArrayList<>()));
 					return 0;
 				}).list();
 		jdbc.sql("select b.page_id, b.block_type, b.body, b.url, b.label from content_blocks b "
 				+ "join career_pages p on p.id = b.page_id where p.career_id = :c order by p.page_number, b.block_order")
 				.param("c", careerId).query((rs, n) -> {
-					pages.get(rs.getLong("page_id")).blocks().add(new ExperienceResponse.Block(
+					pages.get(rs.getLong("page_id")).blocks().add(new ContentBlock(
 							rs.getString("block_type"), rs.getString("body"), rs.getString("url"),
 							rs.getString("label")));
 					return 0;

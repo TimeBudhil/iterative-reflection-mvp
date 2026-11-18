@@ -1,5 +1,6 @@
-package iterative_reflection.mvp.feed.internal;
+package iterative_reflection.mvp.feed.internal.domain;
 
+import iterative_reflection.mvp.feed.internal.services.FeedStateService;
 import iterative_reflection.mvp.career.CareerSummary;
 import java.util.List;
 import java.util.Optional;
@@ -9,7 +10,7 @@ import java.util.Optional;
  * Implemented by {@link AffinityPicker}; ticket 12 changes only
  * how the pool is built in {@link FeedStateService#candidatePool}.
  */
-interface CardPicker {
+public interface CardPicker {
 
 	Optional<CareerSummary> pick(long studentId, List<CareerSummary> pool);
 
