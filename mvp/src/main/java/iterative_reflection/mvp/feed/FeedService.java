@@ -1,5 +1,6 @@
 package iterative_reflection.mvp.feed;
 
+import java.util.List;
 import java.util.OptionalLong;
 
 /** Public API of the feed module. */
@@ -13,5 +14,11 @@ public interface FeedService {
 
 	/** The student's valid in-progress career, without serving anything new. */
 	OptionalLong inProgressCareerId(long studentId);
+
+	/**
+	 * The student's top {@code n} tags by summed affinity, highest first (ties by tag id). Only tags with at least
+	 * one contribution appear (scores may be negative).
+	 */
+	List<TagAffinity> topAffinities(long studentId, int n);
 
 }
