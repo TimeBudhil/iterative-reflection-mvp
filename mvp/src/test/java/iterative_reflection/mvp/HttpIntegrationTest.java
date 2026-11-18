@@ -32,7 +32,9 @@ import org.springframework.test.web.servlet.client.RestTestClient;
 @AutoConfigureMetrics
 @ActiveProfiles("dev")
 // the per-IP login limit is shared by every test in the JVM, so keep it out of the way (the rate-limit test restores 5)
-@org.springframework.test.context.TestPropertySource(properties = "identity.rate-limit.ip-max-failures=1000")
+// the dev demo seed is off for tests unless a class opts in (DemoSeedHttpTest)
+@org.springframework.test.context.TestPropertySource(properties = { "identity.rate-limit.ip-max-failures=1000",
+		"app.demo-seed.enabled=false" })
 public abstract class HttpIntegrationTest {
 
 	private static final AtomicLong EMAIL_SEQUENCE = new AtomicLong();

@@ -2,7 +2,9 @@ package iterative_reflection.mvp.identity.internal;
 
 import iterative_reflection.mvp.identity.AppUserPrincipal;
 import iterative_reflection.mvp.identity.Role;
+import iterative_reflection.mvp.identity.StudentSignedUp;
 import iterative_reflection.mvp.identity.UserService;
+import org.springframework.context.ApplicationEventPublisher;
 import iterative_reflection.mvp.identity.UserSummary;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -35,8 +37,11 @@ class UserAccounts implements UserService, UserDetailsService {
 
 	private final int minimumAge;
 
+	private final ApplicationEventPublisher events;
+
 	UserAccounts(UserRepository users, PasswordEncoder passwordEncoder, Clock clock,
-			@Value("${identity.minimum-age:13}") int minimumAge) {
+			@Value("${identity.minimum-age:13}") int minimumAge, ApplicationEventPublisher events) {
+		this.events = events;
 		this.users = users;
 		this.passwordEncoder = passwordEncoder;
 		this.clock = clock;
@@ -71,12 +76,35 @@ class UserAccounts implements UserService, UserDetailsService {
 		user.acceptedTermsVersion = request.acceptedTermsVersion().trim();
 		user.acceptedTermsAt = now;
 		user.createdAt = now;
+		UserSummary created;
 		try {
-			return toSummary(users.saveAndFlush(user));
+			created = toSummary(users.saveAndFlush(user));
 		}
 		catch (DataIntegrityViolationException e) {
 			throw emailTaken();
 		}
+		events.publishEvent(new StudentSignedUp(created.id(), request.counselorCode()));
+		return created;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Optional<UserSummary> findByEmail(String email) {
+		return users.findByEmail(normalizeEmail(email)).map(UserAccounts::toSummary);
+	}
+
+	@Override
+	@Transactional
+	public UserSummary createDemoAccount(String email, String displayName, String password, Role role) {
+		UserEntity user = new UserEntity();
+		user.email = normalizeEmail(email);
+		user.passwordHash = passwordEncoder.encode(password);
+		user.displayName = displayName.trim();
+		user.role = role;
+		user.active = true;
+		user.demo = true;
+		user.createdAt = clock.instant();
+		return toSummary(users.saveAndFlush(user));
 	}
 
 	@Override

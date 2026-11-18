@@ -6,4 +6,6 @@ interface CounselorProfileRepository extends JpaRepository<CounselorProfileEntit
 
 	boolean existsByJoinCode(String joinCode);
 
+	java.util.Optional<CounselorProfileEntity> findByJoinCode(String joinCode);
+
 }
