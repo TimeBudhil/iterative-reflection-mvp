@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -46,9 +47,10 @@ public class PilotMetricsService {
 	public PilotMetrics compute(LocalDate from, LocalDate to) {
 		Instant start = from == null ? null : from.atStartOfDay(ZoneOffset.UTC).toInstant();
 		Instant end = to == null ? null : to.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
-		long total = users.countPilotStudents(start, end);
-		PilotReflectionStats r = reflections.pilotStats(MIN_REFLECTIONS, start, end);
-		long withIntake = intake.countPilotStudentsWithIntake(start, end);
+		Set<Long> cohort = users.pilotStudentIds(start, end);
+		long total = cohort.size();
+		PilotReflectionStats r = reflections.pilotStats(MIN_REFLECTIONS, cohort);
+		long withIntake = intake.studentsWithIntake(cohort).size();
 		return new PilotMetrics(total, r.studentsWithMinReflections(), percent(r.studentsWithMinReflections(), total),
 				withIntake, percent(withIntake, total), new PilotMetrics.Verdicts(r.yes(), r.maybe(), r.no()));
 	}

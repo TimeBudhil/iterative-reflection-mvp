@@ -37,9 +37,9 @@ public interface UserService {
 	UserSummary setActive(long userId, boolean active);
 
 	/**
-	 * Pilot cohort size: active, non-demo STUDENT accounts created in {@code [from, to)}; a null bound is open.
-	 * One aggregate query.
+	 * The pilot cohort: ids of active, non-demo STUDENT accounts created in {@code [from, to)}; a null bound is open.
+	 * The single definition of the cohort rule; other modules aggregate over these ids. One query.
 	 */
-	long countPilotStudents(java.time.Instant from, java.time.Instant to);
+	java.util.Set<Long> pilotStudentIds(java.time.Instant from, java.time.Instant to);
 
 }

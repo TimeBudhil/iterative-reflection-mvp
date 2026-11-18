@@ -7,8 +7,10 @@ import iterative_reflection.mvp.identity.IntakePromptProvider;
 import iterative_reflection.mvp.intake.IntakeReader;
 import iterative_reflection.mvp.intake.IntakeSaved;
 import iterative_reflection.mvp.intake.IntakeView;
+import iterative_reflection.mvp.intake.internal.domain.IntakeRows.Question;
+import iterative_reflection.mvp.intake.internal.domain.IntakeRows.ResponseHead;
+import iterative_reflection.mvp.intake.internal.repository.IntakeJdbcRepository;
 import iterative_reflection.mvp.reflection.ReflectionReader;
-import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -24,8 +26,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.ErrorResponseException;
@@ -40,15 +40,7 @@ public class IntakeService implements IntakeReader, IntakePromptProvider {
 
 	private static final int MAX_TEXT = 2000;
 
-	private record Question(long id, String key, String prompt, String type) {
-
-		boolean tags() {
-			return "TAGS".equals(type);
-		}
-
-	}
-
-	private final JdbcClient jdbc;
+	private final IntakeJdbcRepository repository;
 
 	private final CareerCatalog catalog;
 
@@ -60,9 +52,9 @@ public class IntakeService implements IntakeReader, IntakePromptProvider {
 
 	private final int minReflections;
 
-	IntakeService(JdbcClient jdbc, CareerCatalog catalog, ReflectionReader reflections,
+	IntakeService(IntakeJdbcRepository repository, CareerCatalog catalog, ReflectionReader reflections,
 			ApplicationEventPublisher events, Clock clock, @Value("${intake.min-reflections:3}") int minReflections) {
-		this.jdbc = jdbc;
+		this.repository = repository;
 		this.catalog = catalog;
 		this.reflections = reflections;
 		this.events = events;
@@ -83,13 +75,9 @@ public class IntakeService implements IntakeReader, IntakePromptProvider {
 					"Reflect on at least " + minReflections + " careers before filling in the intake.");
 		}
 		Map<Question, IntakeDtos.AnswerInput> answers = validate(request);
-		Instant now = clock.instant();
 		long responseId;
 		try {
-			GeneratedKeyHolder keys = new GeneratedKeyHolder();
-			jdbc.sql("insert into intake_responses (student_id, created_at, updated_at) values (:s, :t, :t)")
-					.param("s", studentId).param("t", Timestamp.from(now)).update(keys, "id");
-			responseId = keys.getKey().longValue();
+			responseId = repository.insertResponse(studentId, clock.instant());
 		}
 		catch (DuplicateKeyException e) {
 			throw problem(HttpStatus.CONFLICT, "The intake was already submitted; edit it instead.");
@@ -100,29 +88,19 @@ public class IntakeService implements IntakeReader, IntakePromptProvider {
 	@Transactional
 	public IntakeView edit(long studentId, IntakeDtos.IntakeRequest request) {
 		Map<Question, IntakeDtos.AnswerInput> answers = validate(request);
-		Long responseId = jdbc.sql("select id from intake_responses where student_id = :s").param("s", studentId)
-				.query(Long.class).optional().orElseThrow(() -> problem(HttpStatus.NOT_FOUND,
-						"No intake has been submitted yet."));
-		jdbc.sql("delete from intake_answer_tags where answer_id in (select id from intake_answers "
-				+ "where response_id = :r)").param("r", responseId).update();
-		jdbc.sql("delete from intake_answers where response_id = :r").param("r", responseId).update();
-		jdbc.sql("update intake_responses set updated_at = :t where id = :r")
-				.param("t", Timestamp.from(clock.instant())).param("r", responseId).update();
+		long responseId = repository.responseIdOf(studentId).orElseThrow(
+				() -> problem(HttpStatus.NOT_FOUND, "No intake has been submitted yet."));
+		repository.clearAnswers(responseId, clock.instant());
 		return save(studentId, responseId, answers);
 	}
 
 	private IntakeView save(long studentId, long responseId, Map<Question, IntakeDtos.AnswerInput> answers) {
 		Set<Long> interestTags = new LinkedHashSet<>();
 		answers.forEach((q, a) -> {
-			GeneratedKeyHolder keys = new GeneratedKeyHolder();
-			jdbc.sql("insert into intake_answers (response_id, question_id, text_value) values (:r, :q, :v)")
-					.param("r", responseId).param("q", q.id()).param("v", q.tags() ? null : a.text().strip())
-					.update(keys, "id");
+			long answerId = repository.insertAnswer(responseId, q.id(), q.tags() ? null : a.text().strip());
 			if (q.tags()) {
-				long answerId = keys.getKey().longValue();
 				for (Long tag : new LinkedHashSet<>(a.tagIds())) {
-					jdbc.sql("insert into intake_answer_tags (answer_id, tag_id) values (:a, :t)").param("a", answerId)
-							.param("t", tag).update();
+					repository.insertAnswerTag(answerId, tag);
 					interestTags.add(tag);
 				}
 			}
@@ -189,9 +167,7 @@ public class IntakeService implements IntakeReader, IntakePromptProvider {
 	@Transactional
 	public void dismiss(long studentId) {
 		try {
-			jdbc.sql("insert into intake_dismissals (student_id, dismissed_at) select :s, :t "
-					+ "where not exists (select 1 from intake_dismissals where student_id = :s)")
-					.param("s", studentId).param("t", Timestamp.from(clock.instant())).update();
+			repository.insertDismissalIfAbsent(studentId, clock.instant());
 		}
 		catch (DuplicateKeyException e) {
 			// concurrent dismissal: already dismissed
@@ -200,90 +176,45 @@ public class IntakeService implements IntakeReader, IntakePromptProvider {
 
 	@Override
 	public boolean intakePromptDue(long studentId) {
-		return !hasCompletedIntake(studentId)
-				&& jdbc.sql("select count(*) from intake_dismissals where student_id = :s").param("s", studentId)
-						.query(Integer.class).single() == 0
+		return !hasCompletedIntake(studentId) && !repository.isDismissed(studentId)
 				&& reflections.reflectionCount(studentId) >= minReflections;
 	}
 
 	@Override
 	public boolean hasCompletedIntake(long studentId) {
-		return jdbc.sql("select count(*) from intake_responses where student_id = :s").param("s", studentId)
-				.query(Integer.class).single() > 0;
-	}
-
-	@Override
-	public long countPilotStudentsWithIntake(Instant from, Instant to) {
-		return jdbc.sql("""
-				select count(*) from intake_responses i join users u on u.id = i.student_id
-				where u.role = 'STUDENT' and u.active = true and u.demo = false
-				  and (cast(:from as timestamp) is null or u.created_at >= :from)
-				  and (cast(:to as timestamp) is null or u.created_at < :to)
-				""").param("from", from == null ? null : java.sql.Timestamp.from(from))
-				.param("to", to == null ? null : java.sql.Timestamp.from(to)).query(Long.class).single();
+		return repository.hasResponse(studentId);
 	}
 
 	@Override
 	public Set<Long> studentsWithIntake(Collection<Long> studentIds) {
-		if (studentIds.isEmpty()) {
-			return Set.of();
-		}
-		return Set.copyOf(jdbc.sql("select student_id from intake_responses where student_id in (:ids)")
-				.param("ids", studentIds).query(Long.class).list());
+		return repository.studentsWithResponse(studentIds);
 	}
 
 	@Override
 	public Map<Long, Instant> lastIntakeActivityOf(Collection<Long> studentIds) {
-		Map<Long, Instant> result = new java.util.HashMap<>();
-		if (studentIds.isEmpty()) {
-			return result;
-		}
-		jdbc.sql("select student_id, updated_at from intake_responses where student_id in (:ids)")
-				.param("ids", studentIds).query((rs, n) -> {
-					result.put(rs.getLong("student_id"), rs.getTimestamp("updated_at").toInstant());
-					return 0;
-				}).list();
-		return result;
+		return repository.lastUpdatedOf(studentIds);
 	}
 
 	@Override
 	public Optional<IntakeView> findIntake(long studentId) {
-		record Head(long id, Instant createdAt, Instant updatedAt) {
-		}
-		Optional<Head> head = jdbc.sql("select id, created_at, updated_at from intake_responses where student_id = :s")
-				.param("s", studentId).query((rs, n) -> new Head(rs.getLong("id"),
-						rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant()))
-				.optional();
+		Optional<ResponseHead> head = repository.head(studentId);
 		if (head.isEmpty()) {
 			return Optional.empty();
 		}
 		Map<Long, TagView> tagById = new LinkedHashMap<>();
 		catalog.allTags().forEach(t -> tagById.put(t.id(), t));
 		Map<Long, List<TagView>> tagsByAnswer = new LinkedHashMap<>();
-		jdbc.sql("select at.answer_id, at.tag_id from intake_answer_tags at join intake_answers a "
-				+ "on a.id = at.answer_id where a.response_id = :r order by at.tag_id")
-				.param("r", head.get().id()).query((rs, n) -> {
-					tagsByAnswer.computeIfAbsent(rs.getLong("answer_id"), k -> new ArrayList<>())
-							.add(tagById.get(rs.getLong("tag_id")));
-					return 0;
-				}).list();
-		List<IntakeView.Answer> answers = jdbc.sql("""
-				select a.id, q.question_key, q.prompt, q.question_type, a.text_value
-				from intake_answers a join intake_questions q on q.id = a.question_id
-				where a.response_id = :r order by q.display_order, q.id""").param("r", head.get().id())
-				.query((rs, n) -> new IntakeView.Answer(rs.getString("question_key"), rs.getString("prompt"),
-						rs.getString("question_type"), rs.getString("text_value"),
-						tagsByAnswer.getOrDefault(rs.getLong("id"), List.of())))
-				.list();
+		repository.answerTags(head.get().id()).forEach(
+				t -> tagsByAnswer.computeIfAbsent(t.answerId(), k -> new ArrayList<>()).add(tagById.get(t.tagId())));
+		List<IntakeView.Answer> answers = repository.answers(head.get().id()).stream()
+				.map(a -> new IntakeView.Answer(a.questionKey(), a.prompt(), a.questionType(), a.text(),
+						tagsByAnswer.getOrDefault(a.id(), List.of())))
+				.toList();
 		return Optional.of(new IntakeView(head.get().id(), head.get().createdAt(), head.get().updatedAt(), answers));
 	}
 
 	private List<Question> activeQuestions() {
-		return jdbc.sql("select id, question_key, prompt, question_type from intake_questions "
-				+ "where active = true order by display_order, id")
-				.query((rs, n) -> new Question(rs.getLong("id"), rs.getString("question_key"),
-						rs.getString("prompt"), rs.getString("question_type")))
-				.list();
+		return repository.activeQuestions();
 	}
 
 	private static ErrorResponseException problem(HttpStatus status, String detail) {

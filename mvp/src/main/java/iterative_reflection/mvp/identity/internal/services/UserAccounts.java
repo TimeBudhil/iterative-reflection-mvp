@@ -187,8 +187,8 @@ public class UserAccounts implements UserService, UserDetailsService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public long countPilotStudents(Instant from, Instant to) {
-		return users.countPilotStudents(from, to);
+	public java.util.Set<Long> pilotStudentIds(Instant from, Instant to) {
+		return users.pilotStudentIds(from, to);
 	}
 
 	@Override

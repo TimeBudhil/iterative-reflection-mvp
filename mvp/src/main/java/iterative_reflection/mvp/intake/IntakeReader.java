@@ -18,10 +18,4 @@ public interface IntakeReader {
 	/** Subset of {@code studentIds} that have submitted an intake (one query; for lists and metrics). */
 	Set<Long> studentsWithIntake(Collection<Long> studentIds);
 
-	/**
-	 * Number of active, non-demo STUDENT accounts created in {@code [from, to)} (null bound = open) that have
-	 * submitted an intake. One aggregate query.
-	 */
-	long countPilotStudentsWithIntake(java.time.Instant from, java.time.Instant to);
-
 }

@@ -1,5 +1,8 @@
 package iterative_reflection.mvp.reflection.internal.services;
 
+import iterative_reflection.mvp.reflection.internal.domain.ReflectionRows.ReflectionHeader;
+import iterative_reflection.mvp.reflection.internal.domain.ReflectionRows.VersionHeader;
+import iterative_reflection.mvp.reflection.internal.repository.ReflectionJdbcRepository;
 import iterative_reflection.mvp.reflection.internal.repository.ReflectionRepository;
 import iterative_reflection.mvp.reflection.internal.domain.ReflectionEntity;
 import iterative_reflection.mvp.career.CareerCatalog;
@@ -13,7 +16,6 @@ import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.SubmitReq
 import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.SubmitResponse;
 import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.Verdict;
 import iterative_reflection.mvp.reflection.internal.dto.ReflectionDtos.VersionView;
-import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -28,8 +30,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.ErrorResponseException;
@@ -38,7 +38,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ReflectionService {
 
-	private final JdbcClient jdbc;
+	private final ReflectionJdbcRepository queries;
 
 	private final ReflectionRepository reflections;
 
@@ -48,9 +48,9 @@ public class ReflectionService {
 
 	private final Clock clock;
 
-	ReflectionService(JdbcClient jdbc, ReflectionRepository reflections, CareerCatalog careers,
+	ReflectionService(ReflectionJdbcRepository queries, ReflectionRepository reflections, CareerCatalog careers,
 			ApplicationEventPublisher events, Clock clock) {
-		this.jdbc = jdbc;
+		this.queries = queries;
 		this.reflections = reflections;
 		this.careers = careers;
 		this.events = events;
@@ -58,11 +58,8 @@ public class ReflectionService {
 	}
 
 	public List<QuestionView> activeQuestions() {
-		return jdbc.sql("""
-				select id, question_key, version, prompt, open_prompt from reflection_questions
-				where active = true order by display_order, id
-				""").query((rs, n) -> new QuestionView(rs.getLong("id"), rs.getString("question_key"),
-				rs.getInt("version"), rs.getString("prompt"), rs.getString("open_prompt"), 1, 10)).list();
+		return queries.activeQuestions().stream().map(q -> new QuestionView(q.id(), q.key(), q.version(), q.prompt(),
+				q.openPrompt(), 1, 10)).toList();
 	}
 
 	@Transactional
@@ -115,88 +112,46 @@ public class ReflectionService {
 	public Page<VersionView> versions(long studentId, long careerId, Pageable pageable) {
 		long reflectionId = reflections.findByStudentIdAndCareerId(studentId, careerId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)).id;
-		long total = jdbc.sql("select count(*) from reflection_versions where reflection_id = :r")
-				.param("r", reflectionId).query(Long.class).single();
-		record Header(long id, int number, Verdict verdict, Instant createdAt) {
-		}
-		List<Header> headers = jdbc.sql("""
-				select id, version_number, verdict, created_at from reflection_versions
-				where reflection_id = :r order by version_number desc limit :limit offset :offset
-				""").param("r", reflectionId).param("limit", pageable.getPageSize())
-				.param("offset", pageable.getOffset())
-				.query((rs, n) -> new Header(rs.getLong("id"), rs.getInt("version_number"),
-						Verdict.valueOf(rs.getString("verdict")), rs.getTimestamp("created_at").toInstant()))
-				.list();
-		Map<Long, List<AnswerView>> answers = answersFor(headers.stream().map(Header::id).toList());
-		return new PageImpl<>(headers.stream()
-				.map(h -> new VersionView(h.number(), h.verdict(), answers.get(h.id()), h.createdAt())).toList(),
-				pageable, total);
+		long total = queries.countVersions(reflectionId);
+		List<VersionHeader> headers = queries.versionHeaders(reflectionId, pageable.getPageSize(),
+				pageable.getOffset());
+		Map<Long, List<AnswerView>> answers = answersFor(headers.stream().map(VersionHeader::id).toList());
+		return new PageImpl<>(headers.stream().map(h -> new VersionView(h.number(), Verdict.valueOf(h.verdict()),
+				answers.get(h.id()), h.createdAt())).toList(), pageable, total);
 	}
 
 	/** Inserts a version with its answers and returns the mean score. */
 	private double writeVersion(long reflectionId, int versionNumber, List<QuestionView> questions,
 			SubmitRequest request, Instant now) {
-		var keys = new GeneratedKeyHolder();
-		jdbc.sql("""
-				insert into reflection_versions (reflection_id, version_number, verdict, created_at)
-				values (:r, :n, :v, :t)
-				""").param("r", reflectionId).param("n", versionNumber).param("v", request.verdict().name())
-				.param("t", Timestamp.from(now)).update(keys, "id");
-		long versionId = keys.getKey().longValue();
+		long versionId = queries.insertVersion(reflectionId, versionNumber, request.verdict().name(), now);
 		double sum = 0;
 		for (QuestionView q : questions) {
 			AnswerInput a = request.answers().get(q.key());
-			jdbc.sql("""
-					insert into reflection_answers (reflection_version_id, question_id, score, open_text)
-					values (:v, :q, :s, :o)
-					""").param("v", versionId).param("q", q.id()).param("s", a.score())
-					.param("o", blankToNull(a.openText())).update();
+			queries.insertAnswer(versionId, q.id(), a.score(), blankToNull(a.openText()));
 			sum += a.score();
 		}
 		return sum / questions.size();
 	}
 
 	public Page<ReflectionView> list(long studentId, Pageable pageable) {
-		long total = jdbc.sql("select count(*) from reflections where student_id = :s").param("s", studentId)
-				.query(Long.class).single();
-		record Header(long id, long careerId, int versionNumber, Verdict verdict, Instant createdAt, Instant updatedAt,
-				long versionId) {
-		}
-		List<Header> headers = jdbc.sql("""
-				select r.id, r.career_id, r.current_version, r.created_at, r.updated_at, v.verdict, v.id as version_id
-				from reflections r join reflection_versions v
-				  on v.reflection_id = r.id and v.version_number = r.current_version
-				where r.student_id = :s order by r.updated_at desc, r.id desc
-				limit :limit offset :offset
-				""").param("s", studentId).param("limit", pageable.getPageSize()).param("offset", pageable.getOffset())
-				.query((rs, n) -> new Header(rs.getLong("id"), rs.getLong("career_id"), rs.getInt("current_version"),
-						Verdict.valueOf(rs.getString("verdict")), rs.getTimestamp("created_at").toInstant(),
-						rs.getTimestamp("updated_at").toInstant(), rs.getLong("version_id")))
-				.list();
-		Map<Long, List<AnswerView>> answers = answersFor(headers.stream().map(Header::versionId).toList());
+		long total = queries.countByStudent(studentId);
+		List<ReflectionHeader> headers = queries.currentHeaders(studentId, pageable.getPageSize(),
+				pageable.getOffset());
+		Map<Long, List<AnswerView>> answers = answersFor(headers.stream().map(ReflectionHeader::versionId).toList());
 		List<ReflectionView> content = headers.stream()
 				.map(h -> new ReflectionView(h.id(), h.careerId(),
-						careers.findCareer(h.careerId()).map(CareerSummary::title).orElse(""), h.verdict(),
-						h.versionNumber(), answers.get(h.versionId()), h.createdAt(), h.updatedAt()))
+						careers.findCareer(h.careerId()).map(CareerSummary::title).orElse(""),
+						Verdict.valueOf(h.verdict()), h.versionNumber(), answers.get(h.versionId()), h.createdAt(),
+						h.updatedAt()))
 				.toList();
 		return new PageImpl<>(content, pageable, total);
 	}
 
 	private Map<Long, List<AnswerView>> answersFor(List<Long> versionIds) {
 		Map<Long, List<AnswerView>> result = new LinkedHashMap<>();
-		versionIds.forEach(id -> result.put(id, new ArrayList<>()));
-		if (versionIds.isEmpty()) {
-			return result;
-		}
-		jdbc.sql("""
-				select a.reflection_version_id, q.question_key, q.version, q.prompt, a.score, a.open_text
-				from reflection_answers a join reflection_questions q on q.id = a.question_id
-				where a.reflection_version_id in (:ids) order by q.display_order, q.id
-				""").param("ids", versionIds).query((rs, n) -> {
-					result.get(rs.getLong("reflection_version_id")).add(new AnswerView(rs.getString("question_key"),
-							rs.getInt("version"), rs.getString("prompt"), rs.getInt("score"), rs.getString("open_text")));
-					return 0;
-				}).list();
+		queries.answersFor(versionIds).forEach((versionId, rows) -> result.put(versionId, rows.stream()
+				.map(a -> new AnswerView(a.key(), a.questionVersion(), a.prompt(), a.score(), a.openText()))
+				.toList()));
 		return result;
 	}
 
