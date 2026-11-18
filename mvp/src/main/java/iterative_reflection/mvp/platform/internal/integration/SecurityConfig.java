@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.platform.internal;
+package iterative_reflection.mvp.platform.internal.integration;
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +23,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  * timeouts, login rate limiting and the mustChangePassword gate.
  */
 @Configuration(proxyBeanMethods = false)
-class SecurityConfig {
+public class SecurityConfig {
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, ProblemResponseWriter problems) throws Exception {

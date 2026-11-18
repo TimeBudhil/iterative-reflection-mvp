@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.platform.internal;
+package iterative_reflection.mvp.platform.internal.controller;
 
 import java.util.List;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
  * {@code {field, message}}; unexpected failures are logged and answered with a generic 500 that leaks no internals.
  */
 @RestControllerAdvice
-class ProblemDetailsAdvice extends ResponseEntityExceptionHandler {
+public class ProblemDetailsAdvice extends ResponseEntityExceptionHandler {
 
 	private static final Logger log = LoggerFactory.getLogger(ProblemDetailsAdvice.class);
 

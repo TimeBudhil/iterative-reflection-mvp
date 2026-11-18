@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.platform.internal;
+package iterative_reflection.mvp.platform.internal.integration;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -22,7 +22,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
-class RequestIdFilter extends OncePerRequestFilter {
+public class RequestIdFilter extends OncePerRequestFilter {
 
 	static final String HEADER = "X-Request-Id";
 

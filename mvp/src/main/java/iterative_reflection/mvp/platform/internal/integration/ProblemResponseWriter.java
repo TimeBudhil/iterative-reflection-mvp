@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.platform.internal;
+package iterative_reflection.mvp.platform.internal.integration;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -10,7 +10,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /** Writes RFC 7807 problem+json bodies outside Spring MVC (e.g. from security filters). */
 @Component
-class ProblemResponseWriter {
+public class ProblemResponseWriter {
 
 	private final JsonMapper jsonMapper;
 

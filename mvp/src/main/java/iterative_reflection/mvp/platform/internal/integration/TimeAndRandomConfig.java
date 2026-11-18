@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.platform.internal;
+package iterative_reflection.mvp.platform.internal.integration;
 
 import java.time.Clock;
 import java.util.Random;
@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
  * random source with {@code platform.random.seed}.
  */
 @Configuration(proxyBeanMethods = false)
-class TimeAndRandomConfig {
+public class TimeAndRandomConfig {
 
 	@Bean
 	Clock clock() {
