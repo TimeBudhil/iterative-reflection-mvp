@@ -2,6 +2,10 @@ package iterative_reflection.mvp.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+import java.util.Map;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import com.zaxxer.hikari.HikariDataSource;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
@@ -54,6 +58,28 @@ class ProdProfileHttpTest {
 	void apiDocsAndSwaggerUiAreNotServed() {
 		http.get().uri("/v3/api-docs").exchange().expectStatus().isNotFound();
 		http.get().uri("/swagger-ui/index.html").exchange().expectStatus().isNotFound();
+	}
+
+	@Test
+	void sessionCookieIsSecureHttpOnlyAndSameSiteLax() {
+		String token = http.get().uri("/actuator/health").exchange().returnResult().getResponseHeaders()
+				.getOrEmpty(HttpHeaders.SET_COOKIE).stream().filter(c -> c.startsWith("XSRF-TOKEN="))
+				.map(c -> c.substring("XSRF-TOKEN=".length()).split(";", 2)[0]).findFirst().orElseThrow();
+		java.util.function.Consumer<HttpHeaders> csrf = h -> {
+			h.add(HttpHeaders.COOKIE, "XSRF-TOKEN=" + token);
+			h.set("X-XSRF-TOKEN", token);
+		};
+		String email = "secure-cookie@test.example";
+		http.post().uri("/api/auth/signup").headers(csrf).contentType(MediaType.APPLICATION_JSON)
+				.body(Map.of("email", email, "password", "correct horse battery", "displayName", "S",
+						"birthdate", "2000-01-01", "acceptedTermsVersion", "v1"))
+				.exchange().expectStatus().isCreated();
+		List<String> cookies = http.post().uri("/api/auth/signin").headers(csrf)
+				.contentType(MediaType.APPLICATION_JSON)
+				.body(Map.of("email", email, "password", "correct horse battery")).exchange().expectStatus().isOk()
+				.returnResult().getResponseHeaders().getOrEmpty(HttpHeaders.SET_COOKIE);
+		String session = cookies.stream().filter(c -> c.startsWith("SESSION=")).findFirst().orElseThrow();
+		assertThat(session).contains("; Secure").contains("; HttpOnly").containsIgnoringCase("SameSite=Lax");
 	}
 
 }
