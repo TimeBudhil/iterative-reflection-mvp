@@ -21,4 +21,13 @@ public interface FeedService {
 	 */
 	List<TagAffinity> topAffinities(long studentId, int n);
 
+	/**
+	 * Abandons an opened career: 409 if no page was viewed (or already reflected / abandoned for good), 404 if unknown
+	 * or inactive. Applies the abandon penalty to each tag and clears the in-progress card, in one transaction.
+	 */
+	void abandon(long studentId, long careerId);
+
+	/** The student's abandoned careers (for counselor views), most recent first. */
+	List<AbandonedCareer> abandonedCareers(long studentId);
+
 }

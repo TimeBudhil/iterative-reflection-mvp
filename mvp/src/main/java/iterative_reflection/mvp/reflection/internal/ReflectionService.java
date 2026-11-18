@@ -10,6 +10,7 @@ import iterative_reflection.mvp.reflection.internal.ReflectionDtos.ReflectionVie
 import iterative_reflection.mvp.reflection.internal.ReflectionDtos.SubmitRequest;
 import iterative_reflection.mvp.reflection.internal.ReflectionDtos.SubmitResponse;
 import iterative_reflection.mvp.reflection.internal.ReflectionDtos.Verdict;
+import iterative_reflection.mvp.reflection.internal.ReflectionDtos.VersionView;
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -81,12 +83,63 @@ class ReflectionService {
 		catch (DataIntegrityViolationException e) {
 			throw alreadyReflected(); // lost a race with a concurrent submit: the unique constraint decides
 		}
+		double mean = writeVersion(reflection.id, 1, questions, request, now);
+		events.publishEvent(new ReflectionSaved(studentId, careerId, mean, reflection.id));
+		return new SubmitResponse(reflection.id, careerId, request.verdict(), 1);
+	}
+
+	/** A new version, answered against the currently active questions; replaces the affinity contribution. */
+	@Transactional
+	SubmitResponse edit(long studentId, long careerId, SubmitRequest request) {
+		ReflectionEntity reflection = reflections.findByStudentIdAndCareerId(studentId, careerId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		List<QuestionView> questions = activeQuestions();
+		validateCoverage(questions, request.answers());
+		Instant now = clock.instant();
+		int next = reflection.currentVersion + 1;
+		try {
+			double mean = writeVersion(reflection.id, next, questions, request, now);
+			reflection.currentVersion = next;
+			reflection.updatedAt = now;
+			reflections.saveAndFlush(reflection);
+			events.publishEvent(new ReflectionSaved(studentId, careerId, mean, reflection.id));
+		}
+		catch (DataIntegrityViolationException | ObjectOptimisticLockingFailureException e) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "The reflection was changed concurrently; retry.");
+		}
+		return new SubmitResponse(reflection.id, careerId, request.verdict(), next);
+	}
+
+	Page<VersionView> versions(long studentId, long careerId, Pageable pageable) {
+		long reflectionId = reflections.findByStudentIdAndCareerId(studentId, careerId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)).id;
+		long total = jdbc.sql("select count(*) from reflection_versions where reflection_id = :r")
+				.param("r", reflectionId).query(Long.class).single();
+		record Header(long id, int number, Verdict verdict, Instant createdAt) {
+		}
+		List<Header> headers = jdbc.sql("""
+				select id, version_number, verdict, created_at from reflection_versions
+				where reflection_id = :r order by version_number desc limit :limit offset :offset
+				""").param("r", reflectionId).param("limit", pageable.getPageSize())
+				.param("offset", pageable.getOffset())
+				.query((rs, n) -> new Header(rs.getLong("id"), rs.getInt("version_number"),
+						Verdict.valueOf(rs.getString("verdict")), rs.getTimestamp("created_at").toInstant()))
+				.list();
+		Map<Long, List<AnswerView>> answers = answersFor(headers.stream().map(Header::id).toList());
+		return new PageImpl<>(headers.stream()
+				.map(h -> new VersionView(h.number(), h.verdict(), answers.get(h.id()), h.createdAt())).toList(),
+				pageable, total);
+	}
+
+	/** Inserts a version with its answers and returns the mean score. */
+	private double writeVersion(long reflectionId, int versionNumber, List<QuestionView> questions,
+			SubmitRequest request, Instant now) {
 		var keys = new GeneratedKeyHolder();
 		jdbc.sql("""
 				insert into reflection_versions (reflection_id, version_number, verdict, created_at)
-				values (:r, 1, :v, :t)
-				""").param("r", reflection.id).param("v", request.verdict().name()).param("t", Timestamp.from(now))
-				.update(keys, "id");
+				values (:r, :n, :v, :t)
+				""").param("r", reflectionId).param("n", versionNumber).param("v", request.verdict().name())
+				.param("t", Timestamp.from(now)).update(keys, "id");
 		long versionId = keys.getKey().longValue();
 		double sum = 0;
 		for (QuestionView q : questions) {
@@ -98,8 +151,7 @@ class ReflectionService {
 					.param("o", blankToNull(a.openText())).update();
 			sum += a.score();
 		}
-		events.publishEvent(new ReflectionSaved(studentId, careerId, sum / questions.size(), reflection.id));
-		return new SubmitResponse(reflection.id, careerId, request.verdict(), 1);
+		return sum / questions.size();
 	}
 
 	Page<ReflectionView> list(long studentId, Pageable pageable) {

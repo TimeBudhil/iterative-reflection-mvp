@@ -2,6 +2,7 @@ package iterative_reflection.mvp.feed.internal;
 
 import iterative_reflection.mvp.career.CareerCatalog;
 import iterative_reflection.mvp.career.CareerSummary;
+import iterative_reflection.mvp.feed.AbandonedCareer;
 import iterative_reflection.mvp.feed.FeedCard;
 import iterative_reflection.mvp.feed.FeedService;
 import iterative_reflection.mvp.feed.TagAffinity;
@@ -9,6 +10,7 @@ import iterative_reflection.mvp.reflection.ReflectionReader;
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -35,8 +37,11 @@ class FeedStateService implements FeedService {
 
 	private final AffinityApplier affinity;
 
+	private final AbandonService abandons;
+
 	FeedStateService(JdbcClient jdbc, CareerCatalog catalog, ReflectionReader reflections, CardPicker picker,
-			Clock clock, AffinityApplier affinity) {
+			Clock clock, AffinityApplier affinity, AbandonService abandons) {
+		this.abandons = abandons;
 		this.affinity = affinity;
 		this.jdbc = jdbc;
 		this.catalog = catalog;
@@ -87,9 +92,29 @@ class FeedStateService implements FeedService {
 				.map(OptionalLong::of).orElse(OptionalLong.empty());
 	}
 
-	/** Candidate pool: active careers the student has not reflected on, in default order. Ticket 12 adds abandons. */
+	@Override
+	public void abandon(long studentId, long careerId) {
+		abandons.abandon(studentId, careerId);
+	}
+
+	@Override
+	public List<AbandonedCareer> abandonedCareers(long studentId) {
+		return abandons.abandoned(studentId);
+	}
+
+	/**
+	 * Candidate pool in default order: unseen active careers (not reflected, never abandoned); when none are left,
+	 * careers abandoned once. Careers abandoned twice are gone for good [R4.8].
+	 */
 	List<CareerSummary> candidatePool(long studentId, Set<Long> reflected) {
-		return catalog.activeCareersInDefaultOrder().stream().filter(c -> !reflected.contains(c.id())).toList();
+		Map<Long, Integer> abandoned = abandons.abandonCounts(studentId);
+		List<CareerSummary> open = catalog.activeCareersInDefaultOrder().stream()
+				.filter(c -> !reflected.contains(c.id())).toList();
+		List<CareerSummary> unseen = open.stream().filter(c -> !abandoned.containsKey(c.id())).toList();
+		if (!unseen.isEmpty()) {
+			return unseen;
+		}
+		return open.stream().filter(c -> abandoned.getOrDefault(c.id(), 0) == 1).toList();
 	}
 
 	void clear(long studentId, long careerId) {

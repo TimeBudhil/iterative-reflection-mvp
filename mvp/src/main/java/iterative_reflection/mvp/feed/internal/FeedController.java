@@ -11,6 +11,9 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -38,6 +41,15 @@ class FeedController {
 		CareerSummary c = card.career();
 		return new NextResponse(new CardView(c.id(), c.title(), c.summary(), c.estimatedMinutes(), c.tags(),
 				c.lastPage(), catalog.lastViewedPage(user.id(), c.id())), false);
+	}
+
+	@PostMapping("/api/careers/{id}/abandon")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	void abandon(@AuthenticationPrincipal AppUserPrincipal user, @PathVariable long id) {
+		if (user.role() != Role.STUDENT) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+		}
+		feed.abandon(user.id(), id);
 	}
 
 	record NextResponse(CardView career, boolean exhausted) {

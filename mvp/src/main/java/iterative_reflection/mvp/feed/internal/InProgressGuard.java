@@ -61,7 +61,8 @@ class InProgressGuard implements WebMvcConfigurer {
 				}
 				return true;
 			}
-		}).addPathPatterns("/api/careers/{id}/experience", "/api/careers/{id}/pages/{n}/viewed");
+		}).addPathPatterns("/api/careers/{id}/experience", "/api/careers/{id}/pages/{n}/viewed",
+				"/api/careers/{id}/abandon");
 	}
 
 }
