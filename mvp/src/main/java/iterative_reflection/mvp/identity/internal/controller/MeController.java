@@ -1,5 +1,8 @@
-package iterative_reflection.mvp.identity.internal;
+package iterative_reflection.mvp.identity.internal.controller;
 
+import iterative_reflection.mvp.identity.internal.services.UserAccounts;
+import iterative_reflection.mvp.identity.internal.services.MeResponses;
+import iterative_reflection.mvp.identity.internal.dto.MeResponse;
 import iterative_reflection.mvp.identity.AppUserPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -8,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-class MeController {
+public class MeController {
 
 	private final UserAccounts accounts;
 

@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.identity.internal;
+package iterative_reflection.mvp.identity.internal.services;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  * attempts (even with the right password) are refused until the next window. Counters reset on restart.
  */
 @Component
-class LoginRateLimiter {
+public class LoginRateLimiter {
 
 	private static final long WINDOW_SECONDS = Duration.ofMinutes(15).toSeconds();
 
@@ -32,11 +32,11 @@ class LoginRateLimiter {
 		this.maxFailuresPerIp = maxFailuresPerIp;
 	}
 
-	boolean isBlocked(String account, String ip) {
+	public boolean isBlocked(String account, String ip) {
 		return count("a:" + account) >= maxFailuresPerAccount || count("i:" + ip) >= maxFailuresPerIp;
 	}
 
-	void recordFailure(String account, String ip) {
+	public void recordFailure(String account, String ip) {
 		long window = window();
 		counters.keySet().removeIf(key -> windowOf(key) < window);
 		counters.computeIfAbsent(window + "|a:" + account, k -> new AtomicInteger()).incrementAndGet();

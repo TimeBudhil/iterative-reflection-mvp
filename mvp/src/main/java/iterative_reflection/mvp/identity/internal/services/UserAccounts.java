@@ -1,5 +1,8 @@
-package iterative_reflection.mvp.identity.internal;
+package iterative_reflection.mvp.identity.internal.services;
 
+import iterative_reflection.mvp.identity.internal.domain.UserEntity;
+import iterative_reflection.mvp.identity.internal.dto.SignupRequest;
+import iterative_reflection.mvp.identity.internal.repository.UserRepository;
 import iterative_reflection.mvp.identity.AppUserPrincipal;
 import iterative_reflection.mvp.identity.Role;
 import iterative_reflection.mvp.identity.StudentSignedUp;
@@ -31,7 +34,7 @@ import org.springframework.web.ErrorResponseException;
 
 /** User persistence and signup rules; also the {@link UserService} public API and sign-in user lookup. */
 @Service
-class UserAccounts implements UserService, UserDetailsService {
+public class UserAccounts implements UserService, UserDetailsService {
 
 	private final UserRepository users;
 
@@ -56,12 +59,12 @@ class UserAccounts implements UserService, UserDetailsService {
 		this.minimumAge = minimumAge;
 	}
 
-	static String normalizeEmail(String email) {
+	public static String normalizeEmail(String email) {
 		return email.trim().toLowerCase(Locale.ROOT);
 	}
 
 	@Transactional
-	UserSummary signUpStudent(SignupRequest request) {
+	public UserSummary signUpStudent(SignupRequest request) {
 		LocalDate today = LocalDate.now(clock);
 		if (Period.between(request.birthdate(), today).getYears() < minimumAge) {
 			throw problem(HttpStatus.BAD_REQUEST, "You must be at least " + minimumAge + " years old to sign up.");
@@ -150,7 +153,7 @@ class UserAccounts implements UserService, UserDetailsService {
 
 	/** Verifies the current password, stores the new one and clears {@code mustChangePassword}. */
 	@Transactional
-	void changePassword(long id, String currentPassword, String newPassword) {
+	public void changePassword(long id, String currentPassword, String newPassword) {
 		UserEntity user = users.findById(id).orElseThrow();
 		if (!passwordEncoder.matches(currentPassword, user.passwordHash)) {
 			throw problem(HttpStatus.BAD_REQUEST, "Current password is incorrect.");
@@ -164,7 +167,7 @@ class UserAccounts implements UserService, UserDetailsService {
 	}
 
 	@Transactional
-	UserSummary updateDisplayName(long id, String displayName) {
+	public UserSummary updateDisplayName(long id, String displayName) {
 		UserEntity user = users.findById(id).orElseThrow();
 		user.displayName = displayName.trim();
 		return toSummary(users.saveAndFlush(user));

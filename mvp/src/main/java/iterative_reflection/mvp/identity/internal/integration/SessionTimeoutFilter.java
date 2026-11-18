@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.identity.internal;
+package iterative_reflection.mvp.identity.internal.integration;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -21,11 +21,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 @Component
 @Order(-150)
-class SessionTimeoutFilter extends OncePerRequestFilter {
+public class SessionTimeoutFilter extends OncePerRequestFilter {
 
-	static final String AUTHENTICATED_AT = "app.authenticatedAt";
+	public static final String AUTHENTICATED_AT = "app.authenticatedAt";
 
-	static final String LAST_SEEN = "app.lastSeen";
+	public static final String LAST_SEEN = "app.lastSeen";
 
 	static final Duration IDLE = Duration.ofMinutes(30);
 

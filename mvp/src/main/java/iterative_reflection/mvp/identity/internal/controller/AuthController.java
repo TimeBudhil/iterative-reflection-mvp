@@ -1,5 +1,12 @@
-package iterative_reflection.mvp.identity.internal;
+package iterative_reflection.mvp.identity.internal.controller;
 
+import iterative_reflection.mvp.identity.internal.dto.SignInRequest;
+import iterative_reflection.mvp.identity.internal.services.UserAccounts;
+import iterative_reflection.mvp.identity.internal.services.MeResponses;
+import iterative_reflection.mvp.identity.internal.dto.SignupRequest;
+import iterative_reflection.mvp.identity.internal.services.LoginRateLimiter;
+import iterative_reflection.mvp.identity.internal.dto.MeResponse;
+import iterative_reflection.mvp.identity.internal.integration.SessionTimeoutFilter;
 import iterative_reflection.mvp.identity.AppUserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -31,7 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** Signup and sign-in. Sign-out is the security chain's logout ({@code POST /api/auth/signout}, 204). */
 @RestController
-class AuthController {
+public class AuthController {
 
 	private final UserAccounts accounts;
 

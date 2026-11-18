@@ -1,5 +1,6 @@
-package iterative_reflection.mvp.identity.internal;
+package iterative_reflection.mvp.identity.internal.services;
 
+import iterative_reflection.mvp.identity.internal.repository.UserRepository;
 import iterative_reflection.mvp.identity.Role;
 import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component;
  * fails startup.
  */
 @Component
-class BootstrapAdmin implements ApplicationRunner {
+public class BootstrapAdmin implements ApplicationRunner {
 
 	private static final Logger log = LoggerFactory.getLogger(BootstrapAdmin.class);
 

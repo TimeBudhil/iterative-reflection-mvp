@@ -1,5 +1,10 @@
-package iterative_reflection.mvp.identity.internal;
+package iterative_reflection.mvp.identity.internal.controller;
 
+import iterative_reflection.mvp.identity.internal.dto.ChangePasswordRequest;
+import iterative_reflection.mvp.identity.internal.services.UserAccounts;
+import iterative_reflection.mvp.identity.internal.services.MeResponses;
+import iterative_reflection.mvp.identity.internal.dto.UpdateProfileRequest;
+import iterative_reflection.mvp.identity.internal.dto.MeResponse;
 import iterative_reflection.mvp.identity.AppUserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** Self-service account changes: password and display name. */
 @RestController
-class AccountController {
+public class AccountController {
 
 	private final UserAccounts accounts;
 

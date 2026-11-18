@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.identity.internal;
+package iterative_reflection.mvp.identity.internal.domain;
 
 import iterative_reflection.mvp.identity.Role;
 import jakarta.persistence.Column;
@@ -14,43 +14,43 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "users")
-class UserEntity {
+public class UserEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	Long id;
+	public Long id;
 
 	@Column(nullable = false)
-	String email;
+	public String email;
 
 	@Column(name = "password_hash", nullable = false)
-	String passwordHash;
+	public String passwordHash;
 
 	@Column(name = "display_name", nullable = false)
-	String displayName;
+	public String displayName;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
-	Role role;
+	public Role role;
 
-	boolean active;
+	public boolean active;
 
 	@Column(name = "must_change_password")
-	boolean mustChangePassword;
+	public boolean mustChangePassword;
 
-	boolean demo;
+	public boolean demo;
 
 	@Column(name = "age_verified_at")
-	Instant ageVerifiedAt;
+	public Instant ageVerifiedAt;
 
 	@Column(name = "accepted_terms_version")
-	String acceptedTermsVersion;
+	public String acceptedTermsVersion;
 
 	@Column(name = "accepted_terms_at")
-	Instant acceptedTermsAt;
+	public Instant acceptedTermsAt;
 
 	@Column(name = "created_at", nullable = false)
-	Instant createdAt;
+	public Instant createdAt;
 
 	@Version
 	long version;
