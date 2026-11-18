@@ -4,6 +4,7 @@ import iterative_reflection.mvp.career.CareerCatalog;
 import iterative_reflection.mvp.career.CareerSummary;
 import iterative_reflection.mvp.feed.FeedCard;
 import iterative_reflection.mvp.feed.FeedService;
+import iterative_reflection.mvp.feed.TagAffinity;
 import iterative_reflection.mvp.reflection.ReflectionReader;
 import java.sql.Timestamp;
 import java.time.Clock;
@@ -32,8 +33,11 @@ class FeedStateService implements FeedService {
 
 	private final Clock clock;
 
+	private final AffinityApplier affinity;
+
 	FeedStateService(JdbcClient jdbc, CareerCatalog catalog, ReflectionReader reflections, CardPicker picker,
-			Clock clock) {
+			Clock clock, AffinityApplier affinity) {
+		this.affinity = affinity;
 		this.jdbc = jdbc;
 		this.catalog = catalog;
 		this.reflections = reflections;
@@ -68,6 +72,11 @@ class FeedStateService implements FeedService {
 			return storedCareerId(studentId).flatMap(catalog::findCareer).map(FeedCard::of)
 					.orElseGet(() -> next(studentId));
 		}
+	}
+
+	@Override
+	public List<TagAffinity> topAffinities(long studentId, int n) {
+		return affinity.top(studentId, n);
 	}
 
 	@Override

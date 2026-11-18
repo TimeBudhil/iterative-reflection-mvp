@@ -6,7 +6,7 @@ import java.util.Optional;
 
 /**
  * Strategy that chooses the next card from a candidate pool (already in catalog default order; may be empty).
- * Ticket 10 replaces {@link DefaultOrderPicker} with affinity ranking plus the exploration slot; ticket 12 changes only
+ * Implemented by {@link AffinityPicker}; ticket 12 changes only
  * how the pool is built in {@link FeedStateService#candidatePool}.
  */
 interface CardPicker {
