@@ -17,7 +17,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * Platform-wide HTTP security. Route rules, in order: public health and API docs, ADMIN-only actuator, public
- * signup/signin, ADMIN-only {@code /api/admin/**}, everything else requires a signed-in user. Sessions are the
+ * signup/signin, ADMIN-only {@code /api/admin/**}, everything else is STUDENT-only (deny by default). Sessions are the
  * server-side Spring Session JDBC session; CSRF is cookie-to-header; CORS allows only {@code app.frontend-origin}.
  * Later tickets add filters here ({@code addFilterAfter(..., SecurityContextHolderFilter.class)}) for session
  * timeouts, login rate limiting and the mustChangePassword gate.
@@ -38,13 +38,18 @@ class SecurityConfig {
 						// filter) are open to them; every role rule below denies them
 						.requestMatchers(HttpMethod.GET, "/api/me").authenticated()
 						.requestMatchers(HttpMethod.PUT, "/api/me/password").authenticated()
+						.requestMatchers(HttpMethod.PATCH, "/api/me").hasAnyRole("STUDENT", "COUNSELOR", "ADMIN")
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
 						// R8.4: the counselor area is read-only; rotating the join code is the single allowlisted write
 						.requestMatchers(HttpMethod.GET, "/api/counselor/**").hasRole("COUNSELOR")
 						.requestMatchers(HttpMethod.POST, "/api/counselor/me/join-code/rotate").hasRole("COUNSELOR")
 						.requestMatchers("/api/counselor/**").denyAll()
-						.requestMatchers("/api/students/**", "/api/intake/**").hasRole("STUDENT")
-						.anyRequest().hasAnyRole("STUDENT", "COUNSELOR", "ADMIN"))
+						// shared, read-only content (career pages, reflection prompts) is open to every role
+						.requestMatchers(HttpMethod.GET, "/api/careers/*/experience", "/api/reflection-questions")
+						.hasAnyRole("STUDENT", "COUNSELOR", "ADMIN")
+						// deny by default to students: any other route reads or writes a student's own data, so a
+						// new route is student-only until someone deliberately opens it up above
+						.anyRequest().hasRole("STUDENT"))
 				.csrf(csrf -> csrf.spa())
 				.cors(Customizer.withDefaults())
 				// an anonymous 401 must not create a session row
