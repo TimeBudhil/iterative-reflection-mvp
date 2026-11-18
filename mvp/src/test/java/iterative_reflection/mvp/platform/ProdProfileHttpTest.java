@@ -46,7 +46,8 @@ class ProdProfileHttpTest {
 	@Test
 	void onlyHealthAndPrometheusAreExposed() {
 		http.get().uri("/actuator/prometheus").exchange().expectStatus().isUnauthorized();
-		http.get().uri("/actuator/info").exchange().expectStatus().isNotFound();
+		// unexposed endpoints are indistinguishable from locked ones for anonymous callers
+		http.get().uri("/actuator/info").exchange().expectStatus().isUnauthorized();
 	}
 
 	@Test

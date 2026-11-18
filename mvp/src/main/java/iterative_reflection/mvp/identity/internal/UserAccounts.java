@@ -1,0 +1,109 @@
+package iterative_reflection.mvp.identity.internal;
+
+import iterative_reflection.mvp.identity.AppUserPrincipal;
+import iterative_reflection.mvp.identity.Role;
+import iterative_reflection.mvp.identity.UserService;
+import iterative_reflection.mvp.identity.UserSummary;
+import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.Locale;
+import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.ErrorResponseException;
+
+/** User persistence and signup rules; also the {@link UserService} public API and sign-in user lookup. */
+@Service
+class UserAccounts implements UserService, UserDetailsService {
+
+	private final UserRepository users;
+
+	private final PasswordEncoder passwordEncoder;
+
+	private final Clock clock;
+
+	private final int minimumAge;
+
+	UserAccounts(UserRepository users, PasswordEncoder passwordEncoder, Clock clock,
+			@Value("${identity.minimum-age:13}") int minimumAge) {
+		this.users = users;
+		this.passwordEncoder = passwordEncoder;
+		this.clock = clock;
+		this.minimumAge = minimumAge;
+	}
+
+	static String normalizeEmail(String email) {
+		return email.trim().toLowerCase(Locale.ROOT);
+	}
+
+	@Transactional
+	UserSummary signUpStudent(SignupRequest request) {
+		LocalDate today = LocalDate.now(clock);
+		if (Period.between(request.birthdate(), today).getYears() < minimumAge) {
+			throw problem(HttpStatus.BAD_REQUEST, "You must be at least " + minimumAge + " years old to sign up.");
+		}
+		if (request.password().getBytes(StandardCharsets.UTF_8).length > 72) {
+			throw problem(HttpStatus.BAD_REQUEST, "Password is too long.");
+		}
+		String email = normalizeEmail(request.email());
+		if (users.existsByEmail(email)) {
+			throw emailTaken();
+		}
+		Instant now = clock.instant();
+		UserEntity user = new UserEntity();
+		user.email = email;
+		user.passwordHash = passwordEncoder.encode(request.password());
+		user.displayName = request.displayName().trim();
+		user.role = Role.STUDENT;
+		user.active = true;
+		user.ageVerifiedAt = now;
+		user.acceptedTermsVersion = request.acceptedTermsVersion().trim();
+		user.acceptedTermsAt = now;
+		user.createdAt = now;
+		try {
+			return toSummary(users.saveAndFlush(user));
+		}
+		catch (DataIntegrityViolationException e) {
+			throw emailTaken();
+		}
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Optional<UserSummary> findById(long id) {
+		return users.findById(id).map(UserAccounts::toSummary);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+		UserEntity u = users.findByEmail(normalizeEmail(username))
+				.orElseThrow(() -> new UsernameNotFoundException("unknown user"));
+		return new AppUserPrincipal(u.id, u.email, u.displayName, u.role, u.active, u.mustChangePassword,
+				u.passwordHash);
+	}
+
+	private static UserSummary toSummary(UserEntity u) {
+		return new UserSummary(u.id, u.email, u.displayName, u.role, u.active, u.mustChangePassword);
+	}
+
+	private static ErrorResponseException emailTaken() {
+		return problem(HttpStatus.CONFLICT, "An account with this email already exists.");
+	}
+
+	private static ErrorResponseException problem(HttpStatus status, String detail) {
+		return new ErrorResponseException(status, ProblemDetail.forStatusAndDetail(status, detail), null);
+	}
+
+}

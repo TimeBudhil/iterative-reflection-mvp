@@ -22,6 +22,7 @@ class ErrorHandlingHttpTest extends HttpIntegrationTest {
 	@Test
 	void unknownRouteReturns404AsProblemJson() {
 		http.get().uri("/api/does-not-exist")
+				.headers(signedInStudent()::apply)
 				.exchange()
 				.expectStatus().isNotFound()
 				.expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
@@ -33,9 +34,9 @@ class ErrorHandlingHttpTest extends HttpIntegrationTest {
 
 	@Test
 	void validationFailureListsEachFailingField() {
-		Csrf csrf = csrf();
+		Session session = signedInStudent();
 		http.post().uri("/api/test-probe/widgets")
-				.headers(csrf::apply)
+				.headers(session::apply)
 				.contentType(MediaType.APPLICATION_JSON)
 				.body("{\"name\": \" \", \"score\": 11}")
 				.exchange()
@@ -50,9 +51,9 @@ class ErrorHandlingHttpTest extends HttpIntegrationTest {
 
 	@Test
 	void malformedJsonReturns400ProblemWithoutParserInternals() {
-		Csrf csrf = csrf();
+		Session session = signedInStudent();
 		String body = http.post().uri("/api/test-probe/widgets")
-				.headers(csrf::apply)
+				.headers(session::apply)
 				.contentType(MediaType.APPLICATION_JSON)
 				.body("{\"name\": ")
 				.exchange()
@@ -66,6 +67,7 @@ class ErrorHandlingHttpTest extends HttpIntegrationTest {
 	@Test
 	void unexpectedFailureReturns500ProblemWithoutStackTraceOrSql() {
 		String body = http.get().uri("/api/test-probe/explode")
+				.headers(signedInStudent()::apply)
 				.exchange()
 				.expectStatus().is5xxServerError()
 				.expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)

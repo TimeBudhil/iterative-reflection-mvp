@@ -17,6 +17,7 @@ class PaginationHttpTest extends HttpIntegrationTest {
 	@Test
 	void defaultPageSizeIs20() {
 		http.get().uri("/api/test-probe/items")
+				.headers(signedInStudent()::apply)
 				.exchange()
 				.expectStatus().isOk()
 				.expectBody()
@@ -30,6 +31,7 @@ class PaginationHttpTest extends HttpIntegrationTest {
 	@Test
 	void requestedPageAndSizeAreHonoured() {
 		http.get().uri("/api/test-probe/items?page=2&size=50")
+				.headers(signedInStudent()::apply)
 				.exchange()
 				.expectStatus().isOk()
 				.expectBody()
@@ -41,6 +43,7 @@ class PaginationHttpTest extends HttpIntegrationTest {
 	@Test
 	void sizeAbove100IsClampedTo100() {
 		http.get().uri("/api/test-probe/items?size=500")
+				.headers(signedInStudent()::apply)
 				.exchange()
 				.expectStatus().isOk()
 				.expectBody()

@@ -58,6 +58,7 @@ class RequestIdLoggingHttpTest extends HttpIntegrationTest {
 	@Test
 	void logLinesAreJsonAndCarryTheRequestId(CapturedOutput output) {
 		http.get().uri("/api/does-not-exist")
+				.headers(signedInStudent()::apply)
 				.header("X-Request-Id", "log-check-42")
 				.exchange()
 				.expectStatus().isNotFound();
