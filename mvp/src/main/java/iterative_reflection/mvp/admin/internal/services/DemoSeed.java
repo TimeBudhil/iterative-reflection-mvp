@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.admin.internal;
+package iterative_reflection.mvp.admin.internal.services;
 
 import iterative_reflection.mvp.counselor.CounselorService;
 import iterative_reflection.mvp.identity.Role;
@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Component
 @ConditionalOnProperty("app.demo-seed.enabled")
-class DemoSeed implements ApplicationRunner {
+public class DemoSeed implements ApplicationRunner {
 
 	private static final Logger log = LoggerFactory.getLogger(DemoSeed.class);
 

@@ -1,5 +1,6 @@
-package iterative_reflection.mvp.admin.internal;
+package iterative_reflection.mvp.admin.internal.services;
 
+import iterative_reflection.mvp.admin.internal.dto.PilotMetrics;
 import iterative_reflection.mvp.identity.UserService;
 import iterative_reflection.mvp.intake.IntakeReader;
 import iterative_reflection.mvp.reflection.PilotReflectionStats;
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Service;
  * scrape never costs more than one refresh per interval.
  */
 @Service
-class PilotMetricsService {
+public class PilotMetricsService {
 
 	static final int MIN_REFLECTIONS = 3;
 
@@ -42,7 +43,7 @@ class PilotMetricsService {
 	}
 
 	/** Signup dates are UTC calendar days, both inclusive; null = open. */
-	PilotMetrics compute(LocalDate from, LocalDate to) {
+	public PilotMetrics compute(LocalDate from, LocalDate to) {
 		Instant start = from == null ? null : from.atStartOfDay(ZoneOffset.UTC).toInstant();
 		Instant end = to == null ? null : to.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
 		long total = users.countPilotStudents(start, end);
@@ -53,7 +54,7 @@ class PilotMetricsService {
 	}
 
 	/** All-time metrics, at most {@code ttl} old. */
-	PilotMetrics allTimeCached() {
+	public PilotMetrics allTimeCached() {
 		PilotMetrics current = cached;
 		if (current == null || System.nanoTime() - cachedAtNanos >= ttl.toNanos()) {
 			synchronized (this) {

@@ -1,5 +1,7 @@
-package iterative_reflection.mvp.admin.internal;
+package iterative_reflection.mvp.admin.internal.integration;
 
+import iterative_reflection.mvp.admin.internal.dto.PilotMetrics;
+import iterative_reflection.mvp.admin.internal.services.PilotMetricsService;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
@@ -8,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 /** All-time pilot metrics as Prometheus gauges [N5.3]; values come from the TTL-cached service. */
 @Component
-class PilotMetricsGauges implements MeterBinder {
+public class PilotMetricsGauges implements MeterBinder {
 
 	private final PilotMetricsService service;
 

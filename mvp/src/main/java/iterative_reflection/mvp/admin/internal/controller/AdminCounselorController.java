@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.admin.internal;
+package iterative_reflection.mvp.admin.internal.controller;
 
 import iterative_reflection.mvp.counselor.CounselorService;
 import iterative_reflection.mvp.identity.UserService;
@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-class AdminCounselorController {
+public class AdminCounselorController {
 
 	record CreateCounselorRequest(
 			@NotBlank @Email @Size(max = 254) String email,

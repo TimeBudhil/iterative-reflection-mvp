@@ -1,4 +1,4 @@
-package iterative_reflection.mvp.admin.internal;
+package iterative_reflection.mvp.admin.internal.controller;
 
 import iterative_reflection.mvp.counselor.AuditEntry;
 import iterative_reflection.mvp.counselor.CounselorService;
@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-class AdminAuditController {
+public class AdminAuditController {
 
 	private final CounselorService counselors;
 

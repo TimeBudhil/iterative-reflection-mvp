@@ -1,5 +1,7 @@
-package iterative_reflection.mvp.admin.internal;
+package iterative_reflection.mvp.admin.internal.controller;
 
+import iterative_reflection.mvp.admin.internal.dto.PilotMetrics;
+import iterative_reflection.mvp.admin.internal.services.PilotMetricsService;
 import java.time.LocalDate;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -10,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-class PilotMetricsController {
+public class PilotMetricsController {
 
 	private final PilotMetricsService metrics;
 
