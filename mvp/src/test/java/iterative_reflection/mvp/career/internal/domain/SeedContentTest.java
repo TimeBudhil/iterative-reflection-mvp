@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import iterative_reflection.mvp.HttpIntegrationTest;
 import java.util.List;
 import org.flywaydb.core.Flyway;
+import iterative_reflection.mvp.career.internal.services.CatalogValidation;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -17,7 +18,7 @@ class SeedContentTest extends HttpIntegrationTest {
 	Flyway flyway;
 
 	@Autowired
-	CatalogValidator validator;
+	CatalogValidation validator;
 
 	int count(String sql) {
 		Integer n = jdbc.queryForObject(sql, Integer.class);

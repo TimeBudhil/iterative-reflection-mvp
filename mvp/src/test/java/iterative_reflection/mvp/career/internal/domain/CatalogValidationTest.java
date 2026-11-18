@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
+import iterative_reflection.mvp.career.internal.services.CatalogValidation;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -18,7 +19,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 class CatalogValidationTest extends HttpIntegrationTest {
 
 	@Autowired
-	CatalogValidator validator;
+	CatalogValidation validator;
 
 	@Autowired
 	TransactionTemplate tx;

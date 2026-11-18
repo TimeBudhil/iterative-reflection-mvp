@@ -1,6 +1,6 @@
 package iterative_reflection.mvp.career.internal.integration;
 
-import iterative_reflection.mvp.career.internal.domain.CatalogValidator;
+import iterative_reflection.mvp.career.internal.services.CatalogValidation;
 import java.util.List;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.callback.Context;
@@ -17,9 +17,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class CatalogValidationCallback implements Callback {
 
-	private final CatalogValidator validator;
+	private final CatalogValidation validator;
 
-	public CatalogValidationCallback(CatalogValidator validator) {
+	public CatalogValidationCallback(CatalogValidation validator) {
 		this.validator = validator;
 	}
 

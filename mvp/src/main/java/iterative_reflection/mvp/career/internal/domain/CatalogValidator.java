@@ -8,12 +8,11 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.stereotype.Component;
 
 /**
  * Validates the whole stored catalog (R3.1, R3.3): summary length, duration, tags, contiguous pages, typed blocks and
- * URL hosts. Pure over a {@link JdbcOperations}, so it runs against any migrated schema; the Flyway callback calls it
+ * URL hosts. Pure over a {@link CatalogSnapshot}; the repository loads the snapshot and the Flyway callback validates it
  * after every migrate, which covers every seed migration.
  */
 @Component
@@ -26,31 +25,21 @@ public class CatalogValidator {
 	}
 
 	/** @return human-readable violations, empty when the catalog is valid */
-	public List<String> validate(JdbcOperations jdbc) {
+	public List<String> validate(CatalogSnapshot catalog) {
 		List<String> problems = new ArrayList<>();
-		List<long[]> ids = new ArrayList<>();
-		List<String[]> careers = new ArrayList<>();
-		jdbc.query("select id, title, summary, estimated_minutes from careers order by id", rs -> {
-			ids.add(new long[] { rs.getLong("id"), rs.getInt("estimated_minutes") });
-			careers.add(new String[] { rs.getString("title"), rs.getString("summary") });
-		});
-		for (int i = 0; i < ids.size(); i++) {
-			long id = ids.get(i)[0];
-			int minutes = (int) ids.get(i)[1];
-			String where = "Career '" + careers.get(i)[0] + "'";
-			int sentences = countSentences(careers.get(i)[1]);
+		for (CatalogSnapshot.CareerRow career : catalog.careers()) {
+			String where = "Career '" + career.title() + "'";
+			int sentences = countSentences(career.summary());
 			if (sentences < 3 || sentences > 5) {
 				problems.add(where + ": summary must be 3-5 sentences but has " + sentences);
 			}
-			if (minutes < 5 || minutes > 10) {
-				problems.add(where + ": estimated duration must be 5-10 minutes but is " + minutes);
+			if (career.estimatedMinutes() < 5 || career.estimatedMinutes() > 10) {
+				problems.add(where + ": estimated duration must be 5-10 minutes but is " + career.estimatedMinutes());
 			}
-			Integer tags = jdbc.queryForObject("select count(*) from career_tags where career_id = ?", Integer.class, id);
-			if (tags == null || tags < 1) {
+			if (career.tagCount() < 1) {
 				problems.add(where + ": needs at least one tag");
 			}
-			List<Integer> pages = jdbc.queryForList(
-					"select page_number from career_pages where career_id = ? order by page_number", Integer.class, id);
+			List<Integer> pages = career.pageNumbers();
 			if (pages.isEmpty()) {
 				problems.add(where + ": needs at least one page");
 			}
@@ -61,31 +50,24 @@ public class CatalogValidator {
 				}
 			}
 		}
-		jdbc.query("""
-				select c.title, p.page_number, b.block_order, b.block_type, b.body, b.url
-				from content_blocks b join career_pages p on p.id = b.page_id join careers c on c.id = p.career_id
-				order by c.id, p.page_number, b.block_order
-				""", rs -> {
-			String where = "Career '" + rs.getString("title") + "' page " + rs.getInt("page_number") + " block "
-					+ rs.getInt("block_order");
-			String type = rs.getString("block_type");
-			String body = rs.getString("body");
-			String url = rs.getString("url");
-			if (type.equals("TEXT")) {
-				if (body == null || body.isBlank() || url != null) {
+		for (CatalogSnapshot.BlockRow block : catalog.blocks()) {
+			String where = "Career '" + block.careerTitle() + "' page " + block.pageNumber() + " block "
+					+ block.blockOrder();
+			if (block.type().equals("TEXT")) {
+				if (block.body() == null || block.body().isBlank() || block.url() != null) {
 					problems.add(where + ": TEXT block needs a body and no url");
 				}
-				return;
+				continue;
 			}
-			if (url == null || body != null) {
-				problems.add(where + ": " + type + " block needs a url and no body");
-				return;
+			if (block.url() == null || block.body() != null) {
+				problems.add(where + ": " + block.type() + " block needs a url and no body");
+				continue;
 			}
-			String error = urlError(type, url);
+			String error = urlError(block.type(), block.url());
 			if (error != null) {
 				problems.add(where + ": " + error);
 			}
-		});
+		}
 		return problems;
 	}
 
