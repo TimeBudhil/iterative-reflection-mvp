@@ -12,13 +12,16 @@ class MeController {
 
 	private final UserAccounts accounts;
 
-	MeController(UserAccounts accounts) {
+	private final MeResponses responses;
+
+	MeController(UserAccounts accounts, MeResponses responses) {
 		this.accounts = accounts;
+		this.responses = responses;
 	}
 
 	@GetMapping("/api/me")
 	MeResponse me(@AuthenticationPrincipal AppUserPrincipal principal) {
-		return accounts.findById(principal.id()).map(MeResponse::of)
+		return accounts.findById(principal.id()).map(responses::of)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
 	}
 

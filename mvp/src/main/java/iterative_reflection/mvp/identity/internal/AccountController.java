@@ -36,8 +36,11 @@ class AccountController {
 			new ChangeSessionIdAuthenticationStrategy(),
 			new CsrfAuthenticationStrategy(CookieCsrfTokenRepository.withHttpOnlyFalse())));
 
-	AccountController(UserAccounts accounts) {
+	private final MeResponses responses;
+
+	AccountController(UserAccounts accounts, MeResponses responses) {
 		this.accounts = accounts;
+		this.responses = responses;
 	}
 
 	/** Rotates the session id and refreshes the stored principal (so {@code mustChangePassword} is cleared). */
@@ -54,7 +57,7 @@ class AccountController {
 	MeResponse updateProfile(@AuthenticationPrincipal AppUserPrincipal principal,
 			@Valid @RequestBody UpdateProfileRequest body, HttpServletRequest request,
 			HttpServletResponse response) {
-		MeResponse me = MeResponse.of(accounts.updateDisplayName(principal.id(), body.displayName()));
+		MeResponse me = responses.of(accounts.updateDisplayName(principal.id(), body.displayName()));
 		refreshSession(principal.email(), false, request, response);
 		return me;
 	}

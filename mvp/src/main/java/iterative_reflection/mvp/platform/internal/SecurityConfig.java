@@ -40,7 +40,7 @@ class SecurityConfig {
 						.requestMatchers(HttpMethod.PUT, "/api/me/password").authenticated()
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
 						.requestMatchers("/api/counselor/**").hasRole("COUNSELOR")
-						.requestMatchers("/api/students/**").hasRole("STUDENT")
+						.requestMatchers("/api/students/**", "/api/intake/**").hasRole("STUDENT")
 						.anyRequest().hasAnyRole("STUDENT", "COUNSELOR", "ADMIN"))
 				.csrf(csrf -> csrf.spa())
 				.cors(Customizer.withDefaults())

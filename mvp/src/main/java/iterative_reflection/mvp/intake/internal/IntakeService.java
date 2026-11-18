@@ -1,0 +1,267 @@
+package iterative_reflection.mvp.intake.internal;
+
+import iterative_reflection.mvp.career.CareerCatalog;
+import iterative_reflection.mvp.career.TagView;
+import iterative_reflection.mvp.identity.IntakePromptProvider;
+import iterative_reflection.mvp.intake.IntakeReader;
+import iterative_reflection.mvp.intake.IntakeSaved;
+import iterative_reflection.mvp.intake.IntakeView;
+import iterative_reflection.mvp.reflection.ReflectionReader;
+import java.sql.Timestamp;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.ErrorResponseException;
+
+/**
+ * Intake questions, the one response per student, dismissal and the prompt rule. Saves publish
+ * {@link IntakeSaved} synchronously inside the transaction (feed seeds affinity from it), so a listener failure
+ * rolls the whole intake back [N3.2].
+ */
+@Service
+class IntakeService implements IntakeReader, IntakePromptProvider {
+
+	private static final int MAX_TEXT = 2000;
+
+	private record Question(long id, String key, String prompt, String type) {
+
+		boolean tags() {
+			return "TAGS".equals(type);
+		}
+
+	}
+
+	private final JdbcClient jdbc;
+
+	private final CareerCatalog catalog;
+
+	private final ReflectionReader reflections;
+
+	private final ApplicationEventPublisher events;
+
+	private final Clock clock;
+
+	private final int minReflections;
+
+	IntakeService(JdbcClient jdbc, CareerCatalog catalog, ReflectionReader reflections,
+			ApplicationEventPublisher events, Clock clock, @Value("${intake.min-reflections:3}") int minReflections) {
+		this.jdbc = jdbc;
+		this.catalog = catalog;
+		this.reflections = reflections;
+		this.events = events;
+		this.clock = clock;
+		this.minReflections = minReflections;
+	}
+
+	List<IntakeDtos.QuestionView> questions() {
+		List<TagView> tags = catalog.allTags();
+		return activeQuestions().stream().map(q -> new IntakeDtos.QuestionView(q.id(), q.key(), q.prompt(),
+				q.type(), q.tags() ? tags : null)).toList();
+	}
+
+	@Transactional
+	IntakeView submit(long studentId, IntakeDtos.IntakeRequest request) {
+		if (reflections.reflectionCount(studentId) < minReflections) {
+			throw problem(HttpStatus.CONFLICT,
+					"Reflect on at least " + minReflections + " careers before filling in the intake.");
+		}
+		Map<Question, IntakeDtos.AnswerInput> answers = validate(request);
+		Instant now = clock.instant();
+		long responseId;
+		try {
+			GeneratedKeyHolder keys = new GeneratedKeyHolder();
+			jdbc.sql("insert into intake_responses (student_id, created_at, updated_at) values (:s, :t, :t)")
+					.param("s", studentId).param("t", Timestamp.from(now)).update(keys, "id");
+			responseId = keys.getKey().longValue();
+		}
+		catch (DuplicateKeyException e) {
+			throw problem(HttpStatus.CONFLICT, "The intake was already submitted; edit it instead.");
+		}
+		return save(studentId, responseId, answers);
+	}
+
+	@Transactional
+	IntakeView edit(long studentId, IntakeDtos.IntakeRequest request) {
+		Map<Question, IntakeDtos.AnswerInput> answers = validate(request);
+		Long responseId = jdbc.sql("select id from intake_responses where student_id = :s").param("s", studentId)
+				.query(Long.class).optional().orElseThrow(() -> problem(HttpStatus.NOT_FOUND,
+						"No intake has been submitted yet."));
+		jdbc.sql("delete from intake_answer_tags where answer_id in (select id from intake_answers "
+				+ "where response_id = :r)").param("r", responseId).update();
+		jdbc.sql("delete from intake_answers where response_id = :r").param("r", responseId).update();
+		jdbc.sql("update intake_responses set updated_at = :t where id = :r")
+				.param("t", Timestamp.from(clock.instant())).param("r", responseId).update();
+		return save(studentId, responseId, answers);
+	}
+
+	private IntakeView save(long studentId, long responseId, Map<Question, IntakeDtos.AnswerInput> answers) {
+		Set<Long> interestTags = new LinkedHashSet<>();
+		answers.forEach((q, a) -> {
+			GeneratedKeyHolder keys = new GeneratedKeyHolder();
+			jdbc.sql("insert into intake_answers (response_id, question_id, text_value) values (:r, :q, :v)")
+					.param("r", responseId).param("q", q.id()).param("v", q.tags() ? null : a.text().strip())
+					.update(keys, "id");
+			if (q.tags()) {
+				long answerId = keys.getKey().longValue();
+				for (Long tag : new LinkedHashSet<>(a.tagIds())) {
+					jdbc.sql("insert into intake_answer_tags (answer_id, tag_id) values (:a, :t)").param("a", answerId)
+							.param("t", tag).update();
+					interestTags.add(tag);
+				}
+			}
+		});
+		events.publishEvent(new IntakeSaved(studentId, responseId, Set.copyOf(interestTags)));
+		return findIntake(studentId).orElseThrow();
+	}
+
+	/** Validates against the active questions; returns only answered questions, with normalised input. */
+	private Map<Question, IntakeDtos.AnswerInput> validate(IntakeDtos.IntakeRequest request) {
+		Map<String, Question> byKey = new LinkedHashMap<>();
+		activeQuestions().forEach(q -> byKey.put(q.key(), q));
+		Set<Long> knownTags = new LinkedHashSet<>();
+		catalog.allTags().forEach(t -> knownTags.add(t.id()));
+		List<Map<String, String>> errors = new ArrayList<>();
+		Map<Question, IntakeDtos.AnswerInput> result = new LinkedHashMap<>();
+		request.answers().forEach((key, input) -> {
+			Question q = byKey.get(key);
+			String field = "answers[" + key + "]";
+			if (q == null) {
+				errors.add(Map.of("field", field, "message", "Unknown question."));
+				return;
+			}
+			if (input == null) {
+				return;
+			}
+			boolean hasText = input.text() != null && !input.text().isBlank();
+			boolean hasTags = input.tagIds() != null && !input.tagIds().isEmpty();
+			if (q.tags()) {
+				if (input.text() != null && !input.text().isBlank()) {
+					errors.add(Map.of("field", field + ".text", "message", "This question takes tagIds."));
+				}
+				else if (hasTags && !knownTags.containsAll(input.tagIds())) {
+					errors.add(Map.of("field", field + ".tagIds", "message", "Unknown tag."));
+				}
+				else if (hasTags) {
+					result.put(q, new IntakeDtos.AnswerInput(null, input.tagIds()));
+				}
+			}
+			else {
+				if (hasTags) {
+					errors.add(Map.of("field", field + ".tagIds", "message", "This question takes text."));
+				}
+				else if (hasText && input.text().strip().length() > MAX_TEXT) {
+					errors.add(Map.of("field", field + ".text",
+							"message", "Must be at most " + MAX_TEXT + " characters."));
+				}
+				else if (hasText) {
+					result.put(q, new IntakeDtos.AnswerInput(input.text(), List.of()));
+				}
+			}
+		});
+		if (errors.isEmpty() && result.isEmpty()) {
+			errors.add(Map.of("field", "answers", "message", "Answer at least one question."));
+		}
+		if (!errors.isEmpty()) {
+			ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed.");
+			problem.setProperty("errors", errors);
+			throw new ErrorResponseException(HttpStatus.BAD_REQUEST, problem, null);
+		}
+		return result;
+	}
+
+	@Transactional
+	void dismiss(long studentId) {
+		try {
+			jdbc.sql("insert into intake_dismissals (student_id, dismissed_at) select :s, :t "
+					+ "where not exists (select 1 from intake_dismissals where student_id = :s)")
+					.param("s", studentId).param("t", Timestamp.from(clock.instant())).update();
+		}
+		catch (DuplicateKeyException e) {
+			// concurrent dismissal: already dismissed
+		}
+	}
+
+	@Override
+	public boolean intakePromptDue(long studentId) {
+		return !hasCompletedIntake(studentId)
+				&& jdbc.sql("select count(*) from intake_dismissals where student_id = :s").param("s", studentId)
+						.query(Integer.class).single() == 0
+				&& reflections.reflectionCount(studentId) >= minReflections;
+	}
+
+	@Override
+	public boolean hasCompletedIntake(long studentId) {
+		return jdbc.sql("select count(*) from intake_responses where student_id = :s").param("s", studentId)
+				.query(Integer.class).single() > 0;
+	}
+
+	@Override
+	public Set<Long> studentsWithIntake(Collection<Long> studentIds) {
+		if (studentIds.isEmpty()) {
+			return Set.of();
+		}
+		return Set.copyOf(jdbc.sql("select student_id from intake_responses where student_id in (:ids)")
+				.param("ids", studentIds).query(Long.class).list());
+	}
+
+	@Override
+	public Optional<IntakeView> findIntake(long studentId) {
+		record Head(long id, Instant createdAt, Instant updatedAt) {
+		}
+		Optional<Head> head = jdbc.sql("select id, created_at, updated_at from intake_responses where student_id = :s")
+				.param("s", studentId).query((rs, n) -> new Head(rs.getLong("id"),
+						rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant()))
+				.optional();
+		if (head.isEmpty()) {
+			return Optional.empty();
+		}
+		Map<Long, TagView> tagById = new LinkedHashMap<>();
+		catalog.allTags().forEach(t -> tagById.put(t.id(), t));
+		Map<Long, List<TagView>> tagsByAnswer = new LinkedHashMap<>();
+		jdbc.sql("select at.answer_id, at.tag_id from intake_answer_tags at join intake_answers a "
+				+ "on a.id = at.answer_id where a.response_id = :r order by at.tag_id")
+				.param("r", head.get().id()).query((rs, n) -> {
+					tagsByAnswer.computeIfAbsent(rs.getLong("answer_id"), k -> new ArrayList<>())
+							.add(tagById.get(rs.getLong("tag_id")));
+					return 0;
+				}).list();
+		List<IntakeView.Answer> answers = jdbc.sql("""
+				select a.id, q.question_key, q.prompt, q.question_type, a.text_value
+				from intake_answers a join intake_questions q on q.id = a.question_id
+				where a.response_id = :r order by q.display_order, q.id""").param("r", head.get().id())
+				.query((rs, n) -> new IntakeView.Answer(rs.getString("question_key"), rs.getString("prompt"),
+						rs.getString("question_type"), rs.getString("text_value"),
+						tagsByAnswer.getOrDefault(rs.getLong("id"), List.of())))
+				.list();
+		return Optional.of(new IntakeView(head.get().id(), head.get().createdAt(), head.get().updatedAt(), answers));
+	}
+
+	private List<Question> activeQuestions() {
+		return jdbc.sql("select id, question_key, prompt, question_type from intake_questions "
+				+ "where active = true order by display_order, id")
+				.query((rs, n) -> new Question(rs.getLong("id"), rs.getString("question_key"),
+						rs.getString("prompt"), rs.getString("question_type")))
+				.list();
+	}
+
+	private static ErrorResponseException problem(HttpStatus status, String detail) {
+		return new ErrorResponseException(status, ProblemDetail.forStatusAndDetail(status, detail), null);
+	}
+
+}

@@ -18,4 +18,7 @@ public interface CareerCatalog {
 	/** Active careers ordered by the catalog default order (ties by id). */
 	List<CareerSummary> activeCareersInDefaultOrder();
 
+	/** Every taxonomy tag (all categories, clusters included), ordered by category then name. */
+	List<TagView> allTags();
+
 }

@@ -48,8 +48,11 @@ class AuthController {
 			new ChangeSessionIdAuthenticationStrategy(),
 			new CsrfAuthenticationStrategy(CookieCsrfTokenRepository.withHttpOnlyFalse())));
 
+	private final MeResponses responses;
+
 	AuthController(UserAccounts accounts, AuthenticationManager authenticationManager, LoginRateLimiter rateLimiter,
-			Clock clock) {
+			Clock clock, MeResponses responses) {
+		this.responses = responses;
 		this.rateLimiter = rateLimiter;
 		this.clock = clock;
 		this.accounts = accounts;
@@ -59,7 +62,7 @@ class AuthController {
 	@PostMapping("/api/auth/signup")
 	@ResponseStatus(HttpStatus.CREATED)
 	MeResponse signUp(@Valid @RequestBody SignupRequest request) {
-		return MeResponse.of(accounts.signUpStudent(request));
+		return responses.of(accounts.signUpStudent(request));
 	}
 
 	@PostMapping("/api/auth/signin")
@@ -92,7 +95,7 @@ class AuthController {
 		SecurityContextHolder.setContext(context);
 		securityContextRepository.saveContext(context, request, response);
 		AppUserPrincipal principal = (AppUserPrincipal) authentication.getPrincipal();
-		return accounts.findById(principal.id()).map(MeResponse::of).orElseThrow();
+		return accounts.findById(principal.id()).map(responses::of).orElseThrow();
 	}
 
 }

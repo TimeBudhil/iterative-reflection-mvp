@@ -16,6 +16,12 @@ class JdbcReflectionReader implements ReflectionReader {
 	}
 
 	@Override
+	public int reflectionCount(long studentId) {
+		return jdbc.sql("select count(*) from reflections where student_id = :s").param("s", studentId)
+				.query(Integer.class).single();
+	}
+
+	@Override
 	public Set<Long> reflectedCareerIds(long studentId) {
 		return new HashSet<>(jdbc.sql("select career_id from reflections where student_id = :s")
 				.param("s", studentId).query(Long.class).list());

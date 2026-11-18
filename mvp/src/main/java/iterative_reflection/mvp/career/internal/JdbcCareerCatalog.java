@@ -63,6 +63,15 @@ class JdbcCareerCatalog implements CareerCatalog {
 		return rows.stream().map(r -> r.withTags(tags.get(r.id()))).toList();
 	}
 
+	@Override
+	public List<TagView> allTags() {
+		return jdbc.sql("""
+				select t.id, t.name, tc.name as category from tags t join tag_categories tc on tc.id = t.category_id
+				order by tc.display_order, t.name""")
+				.query((rs, n) -> new TagView(rs.getLong("id"), rs.getString("category"), rs.getString("name")))
+				.list();
+	}
+
 	/** Records that the student viewed {@code page}; progress never moves backwards. Returns the new progress. */
 	@Transactional
 	int recordViewed(long studentId, long careerId, int page) {
