@@ -1,5 +1,7 @@
-package iterative_reflection.mvp.career.internal;
+package iterative_reflection.mvp.career.internal.controller;
 
+import iterative_reflection.mvp.career.internal.dto.ExperienceResponse;
+import iterative_reflection.mvp.career.internal.services.CareerService;
 import iterative_reflection.mvp.career.CareerSummary;
 import iterative_reflection.mvp.identity.AppUserPrincipal;
 import iterative_reflection.mvp.identity.Role;
@@ -14,11 +16,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 /** Read-only career endpoints; the only write is the student's own page progress. */
 @RestController
-class CareerController {
+public class CareerController {
 
-	private final JdbcCareerCatalog catalog;
+	private final CareerService catalog;
 
-	CareerController(JdbcCareerCatalog catalog) {
+	CareerController(CareerService catalog) {
 		this.catalog = catalog;
 	}
 

@@ -1,9 +1,10 @@
-package iterative_reflection.mvp.career.internal;
+package iterative_reflection.mvp.career.internal.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import iterative_reflection.mvp.HttpIntegrationTest;
+import iterative_reflection.mvp.career.internal.integration.CatalogValidationCallback;
 import java.util.List;
 import java.util.function.Consumer;
 import org.flywaydb.core.Flyway;

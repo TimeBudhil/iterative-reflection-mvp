@@ -1,5 +1,6 @@
-package iterative_reflection.mvp.career.internal;
+package iterative_reflection.mvp.career.internal.repository;
 
+import iterative_reflection.mvp.career.internal.dto.ExperienceResponse;
 import iterative_reflection.mvp.career.CareerCatalog;
 import iterative_reflection.mvp.career.CareerSummary;
 import iterative_reflection.mvp.career.TagView;
@@ -20,7 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-class JdbcCareerCatalog implements CareerCatalog {
+public class JdbcCareerCatalog implements CareerCatalog {
 
 	private static final String CAREER_SQL = """
 			select c.id, c.title, c.summary, c.estimated_minutes, c.active, c.default_order,
@@ -92,7 +93,7 @@ class JdbcCareerCatalog implements CareerCatalog {
 
 	/** Records that the student viewed {@code page}; progress never moves backwards. Returns the new progress. */
 	@Transactional
-	int recordViewed(long studentId, long careerId, int page) {
+	public int recordViewed(long studentId, long careerId, int page) {
 		Instant now = clock.instant();
 		int updated = update(studentId, careerId, page, now);
 		if (updated == 0) {
@@ -115,7 +116,7 @@ class JdbcCareerCatalog implements CareerCatalog {
 	}
 
 	/** Experience content: pages with blocks, in order. */
-	List<ExperienceResponse.Page> pages(long careerId) {
+	public List<ExperienceResponse.Page> pages(long careerId) {
 		Map<Long, ExperienceResponse.Page> pages = new LinkedHashMap<>();
 		jdbc.sql("select id, page_number, title from career_pages where career_id = :c order by page_number")
 				.param("c", careerId).query((rs, n) -> {

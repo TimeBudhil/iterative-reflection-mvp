@@ -1,5 +1,6 @@
-package iterative_reflection.mvp.career.internal;
+package iterative_reflection.mvp.career.internal.integration;
 
+import iterative_reflection.mvp.career.internal.domain.CatalogValidator;
 import java.util.List;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.callback.Context;
