@@ -1,9 +1,8 @@
 package iterative_reflection.mvp.counselor.internal.services;
 
+import iterative_reflection.mvp.platform.FixedWindowCounter;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -15,32 +14,21 @@ import org.springframework.stereotype.Component;
 @Component
 public class LinkAttemptLimiter {
 
-	private static final long WINDOW_SECONDS = Duration.ofMinutes(15).toSeconds();
-
-	private final Clock clock;
-
 	private final int maxFailures;
 
-	private final ConcurrentHashMap<String, AtomicInteger> counters = new ConcurrentHashMap<>();
+	private final FixedWindowCounter failures;
 
 	LinkAttemptLimiter(Clock clock, @Value("${counselor.link-rate-limit.max-failures:10}") int maxFailures) {
-		this.clock = clock;
+		this.failures = new FixedWindowCounter(clock, Duration.ofMinutes(15));
 		this.maxFailures = maxFailures;
 	}
 
 	public boolean isBlocked(long studentId) {
-		AtomicInteger c = counters.get(window() + "|" + studentId);
-		return c != null && c.get() >= maxFailures;
+		return failures.count(Long.toString(studentId)) >= maxFailures;
 	}
 
 	public void recordFailure(long studentId) {
-		long window = window();
-		counters.keySet().removeIf(key -> Long.parseLong(key.substring(0, key.indexOf('|'))) < window);
-		counters.computeIfAbsent(window + "|" + studentId, k -> new AtomicInteger()).incrementAndGet();
-	}
-
-	private long window() {
-		return clock.instant().getEpochSecond() / WINDOW_SECONDS;
+		failures.increment(Long.toString(studentId));
 	}
 
 }

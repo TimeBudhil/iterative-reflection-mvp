@@ -9,6 +9,9 @@ public interface UserService {
 
 	Optional<UserSummary> findById(long id);
 
+	/** One query for many users; unknown ids are simply absent from the result. */
+	java.util.Map<Long, UserSummary> findByIds(java.util.Collection<Long> ids);
+
 	/** Case-insensitive lookup. */
 	Optional<UserSummary> findByEmail(String email);
 

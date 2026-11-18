@@ -20,14 +20,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
 import org.springframework.stereotype.Service;
-import org.springframework.web.ErrorResponseException;
 
 /**
  * Read-only assembly of the counselor's views from other modules' public read APIs. Deliberately not
@@ -84,8 +82,7 @@ public class StudentDashboard {
 		boolean allowed = counselors.canSee(counselorId, studentId);
 		audit.record(counselorId, studentId, allowed);
 		if (!allowed) {
-			throw new ErrorResponseException(HttpStatus.FORBIDDEN,
-					ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access is denied."), null);
+			throw new StudentAccessDeniedException();
 		}
 		String name = users.findById(studentId).map(UserSummary::displayName).orElse("");
 		return new Detail(studentId, name, reflections.reflectionsOf(studentId), feed.abandonedCareers(studentId),
@@ -105,6 +102,7 @@ public class StudentDashboard {
 		Map<Long, AbandonActivity> abandons = feed.abandonActivityOf(ids);
 		Map<Long, Instant> intakes = intake.lastIntakeActivityOf(ids);
 
+		Map<Long, UserSummary> students = users.findByIds(ids);
 		List<Row> sorted = ids.stream().map(id -> {
 			ViewActivity v = views.get(id);
 			ReflectionActivity r = refl.get(id);
@@ -112,7 +110,7 @@ public class StudentDashboard {
 			Instant last = Stream.of(v == null ? null : v.lastViewedAt(), r == null ? null : r.lastActivity(),
 					a == null ? null : a.lastAbandonedAt(), intakes.get(id)).filter(Objects::nonNull)
 					.max(Comparator.naturalOrder()).orElse(null);
-			String name = users.findById(id).map(UserSummary::displayName).orElse("");
+			String name = Optional.ofNullable(students.get(id)).map(UserSummary::displayName).orElse("");
 			return new Row(id, name, v == null ? 0 : v.careersSeen(), r == null ? 0 : r.reflected(),
 					a == null ? 0 : a.abandonedCareers(), r == null ? 0 : r.yes(), r == null ? 0 : r.maybe(),
 					r == null ? 0 : r.no(), intakes.containsKey(id), last);

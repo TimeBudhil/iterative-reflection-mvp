@@ -6,7 +6,6 @@ import iterative_reflection.mvp.career.TagView;
 import iterative_reflection.mvp.feed.FeedCard;
 import iterative_reflection.mvp.feed.FeedService;
 import iterative_reflection.mvp.identity.AppUserPrincipal;
-import iterative_reflection.mvp.identity.Role;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 public class FeedController {
@@ -31,9 +29,6 @@ public class FeedController {
 
 	@GetMapping("/api/feed/next")
 	NextResponse next(@AuthenticationPrincipal AppUserPrincipal user) {
-		if (user.role() != Role.STUDENT) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-		}
 		FeedCard card = feed.next(user.id());
 		if (card.exhausted()) {
 			return new NextResponse(null, true);
@@ -46,9 +41,6 @@ public class FeedController {
 	@PostMapping("/api/careers/{id}/abandon")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	void abandon(@AuthenticationPrincipal AppUserPrincipal user, @PathVariable long id) {
-		if (user.role() != Role.STUDENT) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-		}
 		feed.abandon(user.id(), id);
 	}
 

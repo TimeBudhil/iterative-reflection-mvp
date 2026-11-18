@@ -4,7 +4,6 @@ import iterative_reflection.mvp.career.internal.dto.ExperienceResponse;
 import iterative_reflection.mvp.career.internal.services.CareerService;
 import iterative_reflection.mvp.career.CareerSummary;
 import iterative_reflection.mvp.identity.AppUserPrincipal;
-import iterative_reflection.mvp.identity.Role;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -33,9 +32,6 @@ public class CareerController {
 	@PostMapping("/api/careers/{id}/pages/{n}/viewed")
 	Map<String, Integer> viewed(@PathVariable long id, @PathVariable int n,
 			@AuthenticationPrincipal AppUserPrincipal user) {
-		if (user.role() != Role.STUDENT) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-		}
 		CareerSummary career = activeCareer(id);
 		if (n < 1 || n > career.lastPage()) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND);

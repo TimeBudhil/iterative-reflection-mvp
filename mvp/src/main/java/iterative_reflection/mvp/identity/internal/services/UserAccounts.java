@@ -213,6 +213,16 @@ public class UserAccounts implements UserService, UserDetailsService {
 
 	@Override
 	@Transactional(readOnly = true)
+	public java.util.Map<Long, UserSummary> findByIds(java.util.Collection<Long> ids) {
+		java.util.Map<Long, UserSummary> out = new java.util.HashMap<>();
+		if (!ids.isEmpty()) {
+			users.findAllById(ids).forEach(u -> out.put(u.id, toSummary(u)));
+		}
+		return out;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		UserEntity u = users.findByEmail(normalizeEmail(username))
 				.orElseThrow(() -> new UsernameNotFoundException("unknown user"));
