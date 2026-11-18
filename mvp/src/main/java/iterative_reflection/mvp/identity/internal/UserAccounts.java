@@ -79,6 +79,39 @@ class UserAccounts implements UserService, UserDetailsService {
 		}
 	}
 
+	@Override
+	@Transactional
+	public UserSummary createCounselor(String email, String displayName, String temporaryPassword) {
+		return createAccount(email, displayName, temporaryPassword, Role.COUNSELOR, true);
+	}
+
+	/** Creates a staff user (no terms/age record). Used for counselors and the bootstrap admin. */
+	@Transactional
+	UserSummary createAccount(String email, String displayName, String password, Role role,
+			boolean mustChangePassword) {
+		if (password.length() < 12 || password.getBytes(StandardCharsets.UTF_8).length > 72) {
+			throw problem(HttpStatus.BAD_REQUEST, "Password must be between 12 and 72 characters.");
+		}
+		String normalized = normalizeEmail(email);
+		if (users.existsByEmail(normalized)) {
+			throw emailTaken();
+		}
+		UserEntity user = new UserEntity();
+		user.email = normalized;
+		user.passwordHash = passwordEncoder.encode(password);
+		user.displayName = displayName.trim();
+		user.role = role;
+		user.active = true;
+		user.mustChangePassword = mustChangePassword;
+		user.createdAt = clock.instant();
+		try {
+			return toSummary(users.saveAndFlush(user));
+		}
+		catch (DataIntegrityViolationException e) {
+			throw emailTaken();
+		}
+	}
+
 	/** Verifies the current password, stores the new one and clears {@code mustChangePassword}. */
 	@Transactional
 	void changePassword(long id, String currentPassword, String newPassword) {

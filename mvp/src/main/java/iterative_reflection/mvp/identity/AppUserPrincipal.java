@@ -16,6 +16,9 @@ public final class AppUserPrincipal implements UserDetails, CredentialsContainer
 
 	private static final long serialVersionUID = 1L;
 
+	/** The only authority held while {@link #mustChangePassword()} is true. */
+	public static final String PASSWORD_CHANGE_REQUIRED = "PASSWORD_CHANGE_REQUIRED";
+
 	private final long id;
 
 	private final String email;
@@ -63,6 +66,11 @@ public final class AppUserPrincipal implements UserDetails, CredentialsContainer
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
+		// A user who must change a temporary password holds only this authority, so every role-based rule denies
+		// them (R1.10); SecurityConfig lists the few endpoints that stay open. The role itself stays in role().
+		if (mustChangePassword) {
+			return List.of(new SimpleGrantedAuthority(PASSWORD_CHANGE_REQUIRED));
+		}
 		return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
 	}
 

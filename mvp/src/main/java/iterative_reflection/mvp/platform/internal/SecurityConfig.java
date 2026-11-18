@@ -33,8 +33,14 @@ class SecurityConfig {
 						.requestMatchers(EndpointRequest.toAnyEndpoint()).hasRole("ADMIN")
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/signin").permitAll()
+						// R1.10: a user who must change a temporary password holds only
+						// PASSWORD_CHANGE_REQUIRED, so only these two routes (and signout, handled by the logout
+						// filter) are open to them; every role rule below denies them
+						.requestMatchers(HttpMethod.GET, "/api/me").authenticated()
+						.requestMatchers(HttpMethod.PUT, "/api/me/password").authenticated()
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
-						.anyRequest().authenticated())
+						.requestMatchers("/api/counselor/**").hasRole("COUNSELOR")
+						.anyRequest().hasAnyRole("STUDENT", "COUNSELOR", "ADMIN"))
 				.csrf(csrf -> csrf.spa())
 				.cors(Customizer.withDefaults())
 				// an anonymous 401 must not create a session row
