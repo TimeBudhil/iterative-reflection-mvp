@@ -22,7 +22,7 @@ JAR="$(ls target/mvp-*.jar | grep -v original | head -1)"
 (cd "$WORK/lib" && unzip -q -o "../../../$JAR" 'BOOT-INF/lib/h2-*.jar' && mv BOOT-INF/lib/h2-*.jar h2.jar)
 
 DB="jdbc:h2:file:$WORK/db/perf;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;AUTO_SERVER=TRUE"
-java "$HEAP" -jar "$JAR" --server.port="$PORT" --spring.datasource.url="$DB" \
+java "$HEAP" -jar "$JAR" --spring.profiles.active=dev --server.port="$PORT" --spring.datasource.url="$DB" \
   --logging.level.root=WARN > "$WORK/app.log" 2>&1 &
 APP=$!
 trap 'kill $APP 2>/dev/null || true' EXIT

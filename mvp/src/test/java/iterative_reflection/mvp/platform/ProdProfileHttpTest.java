@@ -82,4 +82,25 @@ class ProdProfileHttpTest {
 		assertThat(session).contains("; Secure").contains("; HttpOnly").containsIgnoringCase("SameSite=Lax");
 	}
 
+	/** Behind a proxy the login IP limit must key on the forwarded client address, not the proxy's. */
+	@Test
+	void loginIpLimitUsesTheForwardedClientAddress() {
+		String token = http.get().uri("/actuator/health").exchange().returnResult().getResponseHeaders()
+				.getOrEmpty(HttpHeaders.SET_COOKIE).stream().filter(c -> c.startsWith("XSRF-TOKEN="))
+				.map(c -> c.substring("XSRF-TOKEN=".length()).split(";", 2)[0]).findFirst().orElseThrow();
+		java.util.function.Function<String, Integer> failedSignin = clientIp -> http.post().uri("/api/auth/signin")
+				.headers(h -> {
+					h.add(HttpHeaders.COOKIE, "XSRF-TOKEN=" + token);
+					h.set("X-XSRF-TOKEN", token);
+					h.set("X-Forwarded-For", clientIp);
+				}).contentType(MediaType.APPLICATION_JSON)
+				.body(Map.of("email", "nobody" + System.nanoTime() + "@test.example", "password", "wrong wrong wrong"))
+				.exchange().returnResult().getStatus().value();
+		for (int i = 0; i < 5; i++) {
+			assertThat(failedSignin.apply("203.0.113.7")).isEqualTo(401);
+		}
+		assertThat(failedSignin.apply("203.0.113.7")).isEqualTo(429);
+		assertThat(failedSignin.apply("198.51.100.9")).isEqualTo(401);
+	}
+
 }
