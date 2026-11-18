@@ -12,6 +12,9 @@ public interface IntakeReader {
 
 	boolean hasCompletedIntake(long studentId);
 
+	/** When each student last submitted or edited their intake; students without an intake are absent. */
+	java.util.Map<Long, java.time.Instant> lastIntakeActivityOf(Collection<Long> studentIds);
+
 	/** Subset of {@code studentIds} that have submitted an intake (one query; for lists and metrics). */
 	Set<Long> studentsWithIntake(Collection<Long> studentIds);
 

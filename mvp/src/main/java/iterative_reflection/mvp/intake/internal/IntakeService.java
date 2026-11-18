@@ -221,6 +221,20 @@ class IntakeService implements IntakeReader, IntakePromptProvider {
 	}
 
 	@Override
+	public Map<Long, Instant> lastIntakeActivityOf(Collection<Long> studentIds) {
+		Map<Long, Instant> result = new java.util.HashMap<>();
+		if (studentIds.isEmpty()) {
+			return result;
+		}
+		jdbc.sql("select student_id, updated_at from intake_responses where student_id in (:ids)")
+				.param("ids", studentIds).query((rs, n) -> {
+					result.put(rs.getLong("student_id"), rs.getTimestamp("updated_at").toInstant());
+					return 0;
+				}).list();
+		return result;
+	}
+
+	@Override
 	public Optional<IntakeView> findIntake(long studentId) {
 		record Head(long id, Instant createdAt, Instant updatedAt) {
 		}

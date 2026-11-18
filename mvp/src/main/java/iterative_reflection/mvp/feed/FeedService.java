@@ -27,6 +27,9 @@ public interface FeedService {
 	 */
 	void abandon(long studentId, long careerId);
 
+	/** Abandon totals per student, in one query; students who never abandoned are absent from the map. */
+	java.util.Map<Long, AbandonActivity> abandonActivityOf(java.util.Collection<Long> studentIds);
+
 	/** The student's abandoned careers (for counselor views), most recent first. */
 	List<AbandonedCareer> abandonedCareers(long studentId);
 

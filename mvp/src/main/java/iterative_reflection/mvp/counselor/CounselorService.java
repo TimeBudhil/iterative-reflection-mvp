@@ -36,6 +36,12 @@ public interface CounselorService {
 	/** Replaces the counselor's join code; existing links are unaffected. Returns the new profile. */
 	CounselorProfile rotateJoinCode(long counselorId);
 
+	/**
+	 * Audit entries of counselor detail reads (allowed and denied), newest first; restricted to one student when
+	 * {@code studentId} is non-null. For the admin audit endpoint.
+	 */
+	Page<AuditEntry> auditLog(Long studentId, Pageable pageable);
+
 	/** Join code and active linked-student count for each of the given counselor ids that has a profile. */
 	Map<Long, CounselorOverview> overviews(Collection<Long> counselorIds);
 

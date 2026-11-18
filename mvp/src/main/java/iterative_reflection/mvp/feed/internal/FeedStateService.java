@@ -2,6 +2,7 @@ package iterative_reflection.mvp.feed.internal;
 
 import iterative_reflection.mvp.career.CareerCatalog;
 import iterative_reflection.mvp.career.CareerSummary;
+import iterative_reflection.mvp.feed.AbandonActivity;
 import iterative_reflection.mvp.feed.AbandonedCareer;
 import iterative_reflection.mvp.feed.FeedCard;
 import iterative_reflection.mvp.feed.FeedService;
@@ -95,6 +96,23 @@ class FeedStateService implements FeedService {
 	@Override
 	public void abandon(long studentId, long careerId) {
 		abandons.abandon(studentId, careerId);
+	}
+
+	@Override
+	public Map<Long, AbandonActivity> abandonActivityOf(java.util.Collection<Long> studentIds) {
+		Map<Long, AbandonActivity> result = new java.util.HashMap<>();
+		if (studentIds.isEmpty()) {
+			return result;
+		}
+		jdbc.sql("""
+				select student_id, count(*) as total, max(abandoned_at) as last_at
+				from abandons where student_id in (:ids) group by student_id
+				""").param("ids", studentIds).query((rs, n) -> {
+					result.put(rs.getLong("student_id"),
+							new AbandonActivity(rs.getInt("total"), rs.getTimestamp("last_at").toInstant()));
+					return 0;
+				}).list();
+		return result;
 	}
 
 	@Override

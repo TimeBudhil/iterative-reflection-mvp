@@ -38,8 +38,11 @@ class CounselorProfiles implements CounselorService {
 
 	private final UserService users;
 
+	private final AuditLog audit;
+
 	CounselorProfiles(CounselorProfileRepository profiles, RandomGenerator random, Clock clock,
-			CounselorLinkRepository links, UserService users) {
+			CounselorLinkRepository links, UserService users, AuditLog audit) {
+		this.audit = audit;
 		this.links = links;
 		this.users = users;
 		this.profiles = profiles;
@@ -114,6 +117,11 @@ class CounselorProfiles implements CounselorService {
 	public boolean canSee(long counselorId, long studentId) {
 		return links.existsByCounselorIdAndStudentIdAndRevokedAtIsNull(counselorId, studentId)
 				&& users.findById(counselorId).map(UserSummary::active).orElse(false);
+	}
+
+	@Override
+	public Page<iterative_reflection.mvp.counselor.AuditEntry> auditLog(Long studentId, Pageable pageable) {
+		return audit.find(studentId, pageable);
 	}
 
 	@Override

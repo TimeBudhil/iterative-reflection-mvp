@@ -3,6 +3,7 @@ package iterative_reflection.mvp.career.internal;
 import iterative_reflection.mvp.career.CareerCatalog;
 import iterative_reflection.mvp.career.CareerSummary;
 import iterative_reflection.mvp.career.TagView;
+import iterative_reflection.mvp.career.ViewActivity;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -61,6 +62,23 @@ class JdbcCareerCatalog implements CareerCatalog {
 				.query((rs, n) -> row(rs)).list();
 		Map<Long, List<TagView>> tags = tagsFor(rows.stream().map(Row::id).toList());
 		return rows.stream().map(r -> r.withTags(tags.get(r.id()))).toList();
+	}
+
+	@Override
+	public Map<Long, ViewActivity> viewActivityOf(java.util.Collection<Long> studentIds) {
+		Map<Long, ViewActivity> result = new java.util.HashMap<>();
+		if (studentIds.isEmpty()) {
+			return result;
+		}
+		jdbc.sql("""
+				select student_id, count(*) as seen, max(updated_at) as last_viewed
+				from page_progress where student_id in (:ids) and last_viewed_page >= 1 group by student_id
+				""").param("ids", studentIds).query((rs, n) -> {
+					result.put(rs.getLong("student_id"), new ViewActivity(rs.getInt("seen"),
+							rs.getTimestamp("last_viewed").toInstant()));
+					return 0;
+				}).list();
+		return result;
 	}
 
 	@Override

@@ -39,7 +39,10 @@ class SecurityConfig {
 						.requestMatchers(HttpMethod.GET, "/api/me").authenticated()
 						.requestMatchers(HttpMethod.PUT, "/api/me/password").authenticated()
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
-						.requestMatchers("/api/counselor/**").hasRole("COUNSELOR")
+						// R8.4: the counselor area is read-only; rotating the join code is the single allowlisted write
+						.requestMatchers(HttpMethod.GET, "/api/counselor/**").hasRole("COUNSELOR")
+						.requestMatchers(HttpMethod.POST, "/api/counselor/me/join-code/rotate").hasRole("COUNSELOR")
+						.requestMatchers("/api/counselor/**").denyAll()
 						.requestMatchers("/api/students/**", "/api/intake/**").hasRole("STUDENT")
 						.anyRequest().hasAnyRole("STUDENT", "COUNSELOR", "ADMIN"))
 				.csrf(csrf -> csrf.spa())

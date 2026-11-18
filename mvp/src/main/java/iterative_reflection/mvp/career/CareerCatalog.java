@@ -18,6 +18,9 @@ public interface CareerCatalog {
 	/** Active careers ordered by the catalog default order (ties by id). */
 	List<CareerSummary> activeCareersInDefaultOrder();
 
+	/** Careers started and last page-view time per student, in one query; students with no progress are absent. */
+	java.util.Map<Long, ViewActivity> viewActivityOf(java.util.Collection<Long> studentIds);
+
 	/** Every taxonomy tag (all categories, clusters included), ordered by category then name. */
 	List<TagView> allTags();
 

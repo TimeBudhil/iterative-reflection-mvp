@@ -15,6 +15,11 @@ interface CounselorLinkRepository extends JpaRepository<CounselorLinkEntity, Lon
 
 	boolean existsByCounselorIdAndStudentIdAndRevokedAtIsNull(long counselorId, long studentId);
 
+	@org.springframework.data.jpa.repository.Query("select l.studentId from CounselorLinkEntity l "
+			+ "where l.counselorId = :counselorId and l.revokedAt is null order by l.studentId")
+	java.util.List<Long> findActiveStudentIds(
+			@org.springframework.data.repository.query.Param("counselorId") long counselorId);
+
 	long countByCounselorIdAndRevokedAtIsNull(long counselorId);
 
 }
