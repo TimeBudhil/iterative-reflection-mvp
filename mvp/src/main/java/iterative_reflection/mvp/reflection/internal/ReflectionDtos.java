@@ -41,6 +41,9 @@ final class ReflectionDtos {
 			List<AnswerView> answers, Instant createdAt, Instant updatedAt) {
 	}
 
+	record VersionView(int versionNumber, Verdict verdict, List<AnswerView> answers, Instant createdAt) {
+	}
+
 	record SubmitResponse(long id, long careerId, Verdict verdict, int versionNumber) {
 	}
 
