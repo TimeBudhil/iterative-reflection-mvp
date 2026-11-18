@@ -5,6 +5,7 @@ import iterative_reflection.mvp.identity.Role;
 import iterative_reflection.mvp.reflection.internal.ReflectionDtos.QuestionView;
 import iterative_reflection.mvp.reflection.internal.ReflectionDtos.ReflectionView;
 import iterative_reflection.mvp.reflection.internal.ReflectionDtos.SubmitRequest;
+import iterative_reflection.mvp.reflection.internal.ReflectionDtos.VersionView;
 import iterative_reflection.mvp.reflection.internal.ReflectionDtos.SubmitResponse;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -15,6 +16,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,6 +42,20 @@ class ReflectionController {
 			@AuthenticationPrincipal AppUserPrincipal user) {
 		requireStudent(user);
 		return service.submit(user.id(), careerId, request);
+	}
+
+	@PutMapping("/api/careers/{careerId}/reflection")
+	SubmitResponse edit(@PathVariable long careerId, @Valid @RequestBody SubmitRequest request,
+			@AuthenticationPrincipal AppUserPrincipal user) {
+		requireStudent(user);
+		return service.edit(user.id(), careerId, request);
+	}
+
+	@GetMapping("/api/careers/{careerId}/reflection/versions")
+	Page<VersionView> versions(@PathVariable long careerId, Pageable pageable,
+			@AuthenticationPrincipal AppUserPrincipal user) {
+		requireStudent(user);
+		return service.versions(user.id(), careerId, pageable);
 	}
 
 	@GetMapping("/api/students/me/reflections")
