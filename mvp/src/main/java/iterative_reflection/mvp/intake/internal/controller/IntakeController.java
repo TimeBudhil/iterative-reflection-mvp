@@ -1,5 +1,7 @@
-package iterative_reflection.mvp.intake.internal;
+package iterative_reflection.mvp.intake.internal.controller;
 
+import iterative_reflection.mvp.intake.internal.services.IntakeService;
+import iterative_reflection.mvp.intake.internal.dto.IntakeDtos;
 import iterative_reflection.mvp.identity.AppUserPrincipal;
 import iterative_reflection.mvp.intake.IntakeView;
 import jakarta.validation.Valid;
@@ -15,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-class IntakeController {
+public class IntakeController {
 
 	private final IntakeService intake;
 

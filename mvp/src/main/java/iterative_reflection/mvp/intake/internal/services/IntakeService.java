@@ -1,5 +1,6 @@
-package iterative_reflection.mvp.intake.internal;
+package iterative_reflection.mvp.intake.internal.services;
 
+import iterative_reflection.mvp.intake.internal.dto.IntakeDtos;
 import iterative_reflection.mvp.career.CareerCatalog;
 import iterative_reflection.mvp.career.TagView;
 import iterative_reflection.mvp.identity.IntakePromptProvider;
@@ -35,7 +36,7 @@ import org.springframework.web.ErrorResponseException;
  * rolls the whole intake back [N3.2].
  */
 @Service
-class IntakeService implements IntakeReader, IntakePromptProvider {
+public class IntakeService implements IntakeReader, IntakePromptProvider {
 
 	private static final int MAX_TEXT = 2000;
 
@@ -69,14 +70,14 @@ class IntakeService implements IntakeReader, IntakePromptProvider {
 		this.minReflections = minReflections;
 	}
 
-	List<IntakeDtos.QuestionView> questions() {
+	public List<IntakeDtos.QuestionView> questions() {
 		List<TagView> tags = catalog.allTags();
 		return activeQuestions().stream().map(q -> new IntakeDtos.QuestionView(q.id(), q.key(), q.prompt(),
 				q.type(), q.tags() ? tags : null)).toList();
 	}
 
 	@Transactional
-	IntakeView submit(long studentId, IntakeDtos.IntakeRequest request) {
+	public IntakeView submit(long studentId, IntakeDtos.IntakeRequest request) {
 		if (reflections.reflectionCount(studentId) < minReflections) {
 			throw problem(HttpStatus.CONFLICT,
 					"Reflect on at least " + minReflections + " careers before filling in the intake.");
@@ -97,7 +98,7 @@ class IntakeService implements IntakeReader, IntakePromptProvider {
 	}
 
 	@Transactional
-	IntakeView edit(long studentId, IntakeDtos.IntakeRequest request) {
+	public IntakeView edit(long studentId, IntakeDtos.IntakeRequest request) {
 		Map<Question, IntakeDtos.AnswerInput> answers = validate(request);
 		Long responseId = jdbc.sql("select id from intake_responses where student_id = :s").param("s", studentId)
 				.query(Long.class).optional().orElseThrow(() -> problem(HttpStatus.NOT_FOUND,
@@ -186,7 +187,7 @@ class IntakeService implements IntakeReader, IntakePromptProvider {
 	}
 
 	@Transactional
-	void dismiss(long studentId) {
+	public void dismiss(long studentId) {
 		try {
 			jdbc.sql("insert into intake_dismissals (student_id, dismissed_at) select :s, :t "
 					+ "where not exists (select 1 from intake_dismissals where student_id = :s)")
