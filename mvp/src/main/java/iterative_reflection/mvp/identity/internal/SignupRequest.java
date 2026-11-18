@@ -13,5 +13,6 @@ record SignupRequest(
 		@NotNull @Size(min = 12, max = 72, message = "must be between 12 and 72 characters") String password,
 		@NotBlank @Size(max = 100) String displayName,
 		@NotNull @Past LocalDate birthdate,
-		@NotBlank @Size(max = 50) String acceptedTermsVersion) {
+		@NotBlank @Size(max = 50) String acceptedTermsVersion,
+		@Size(max = 32) String counselorCode) {
 }
