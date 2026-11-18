@@ -75,9 +75,9 @@ class AccountSettingsHttpTest extends HttpIntegrationTest {
 		String email = createUser(uniqueEmail(), OLD, "COUNSELOR", true);
 		Session s = signIn(email, OLD);
 		changePassword(s, OLD, NEW).expectStatus().isNoContent();
-		assertThat(jdbc.queryForObject("select must_change_password from users where email = ?", Boolean.class,
-				email)).isFalse();
-		signIn(email, NEW);
+		Session fresh = signIn(email, NEW);
+		http.get().uri("/api/me").headers(fresh::apply).exchange().expectBody().jsonPath("$.mustChangePassword")
+				.isEqualTo(false);
 	}
 
 	@Test
@@ -96,9 +96,7 @@ class AccountSettingsHttpTest extends HttpIntegrationTest {
 				.expectBody().jsonPath("$.displayName").isEqualTo("New Name")
 				.jsonPath("$.email").isEqualTo(email).jsonPath("$.role").isEqualTo("STUDENT");
 		http.get().uri("/api/me").headers(s::apply).exchange().expectBody()
-				.jsonPath("$.displayName").isEqualTo("New Name");
-		assertThat(jdbc.queryForObject("select role from users where email = ?", String.class, email))
-				.isEqualTo("STUDENT");
+				.jsonPath("$.displayName").isEqualTo("New Name").jsonPath("$.role").isEqualTo("STUDENT");
 	}
 
 	@Test

@@ -19,8 +19,8 @@ class IdentityHttpTest extends HttpIntegrationTest {
 	void signupCreatesStudentAndIgnoresRoleInPayload() {
 		String email = uniqueEmail();
 		signup(email, PASSWORD, adult(), "v1", "\"role\": \"ADMIN\"").expectStatus().isCreated();
-		assertThat(jdbc.queryForObject("select role from users where email = ?", String.class, email))
-				.isEqualTo("STUDENT");
+		Session s = signIn(email, PASSWORD);
+		http.get().uri("/api/me").headers(s::apply).exchange().expectBody().jsonPath("$.role").isEqualTo("STUDENT");
 	}
 
 	@Test
