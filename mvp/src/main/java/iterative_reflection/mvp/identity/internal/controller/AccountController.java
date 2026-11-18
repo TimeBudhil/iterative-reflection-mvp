@@ -54,8 +54,10 @@ public class AccountController {
 	void changePassword(@AuthenticationPrincipal AppUserPrincipal principal,
 			@Valid @RequestBody ChangePasswordRequest body, HttpServletRequest request,
 			HttpServletResponse response) {
+		String currentSessionId = request.getSession().getId(); // before rotation: the stored id to keep
 		accounts.changePassword(principal.id(), body.currentPassword(), body.newPassword());
 		refreshSession(principal.email(), true, request, response);
+		accounts.endOtherSessions(principal.email(), currentSessionId);
 	}
 
 	@PatchMapping("/api/me")

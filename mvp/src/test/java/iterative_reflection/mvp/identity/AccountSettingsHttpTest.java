@@ -60,6 +60,17 @@ class AccountSettingsHttpTest extends HttpIntegrationTest {
 	}
 
 	@Test
+	void changingPasswordEndsEveryOtherSessionOfTheUser() {
+		String email = createUser(uniqueEmail(), OLD, "STUDENT", false);
+		Session laptop = signIn(email, OLD);
+		Session phone = signIn(email, OLD);
+		changePassword(laptop, OLD, NEW).expectStatus().isNoContent();
+		http.get().uri("/api/me").headers(phone::apply).exchange().expectStatus().isUnauthorized();
+		Session fresh = signIn(email, NEW);
+		http.get().uri("/api/me").headers(fresh::apply).exchange().expectStatus().isOk();
+	}
+
+	@Test
 	void changePasswordClearsMustChangePassword() {
 		String email = createUser(uniqueEmail(), OLD, "COUNSELOR", true);
 		Session s = signIn(email, OLD);

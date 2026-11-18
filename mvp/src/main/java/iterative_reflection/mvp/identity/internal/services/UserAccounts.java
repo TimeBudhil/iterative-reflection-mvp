@@ -166,6 +166,12 @@ public class UserAccounts implements UserService, UserDetailsService {
 		users.saveAndFlush(user);
 	}
 
+	/** Deletes every stored session of the user except {@code keepSessionId} (the caller's own). */
+	public void endOtherSessions(String email, String keepSessionId) {
+		sessions.findByPrincipalName(email).keySet().stream().filter(id -> !id.equals(keepSessionId))
+				.forEach(sessions::deleteById);
+	}
+
 	@Transactional
 	public UserSummary updateDisplayName(long id, String displayName) {
 		UserEntity user = users.findById(id).orElseThrow();
