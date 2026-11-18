@@ -40,18 +40,7 @@ class AdminPilotMetricsHttpTest extends HttpIntegrationTest {
 	}
 
 	private void reflect(Student s, long career, String verdict) {
-		int last = jdbc.queryForObject("select max(page_number) from career_pages where career_id = ?",
-				Integer.class, career);
-		for (int p = 1; p <= last; p++) {
-			http.post().uri("/api/careers/{id}/pages/{n}/viewed", career, p).headers(s.session()::apply).exchange()
-					.expectStatus().isOk();
-		}
-		Map<String, Object> answers = new LinkedHashMap<>();
-		List.of("interest", "values", "lifestyle", "responsibilities", "sacrifices")
-				.forEach(k -> answers.put(k, Map.of("score", 8)));
-		http.post().uri("/api/careers/{id}/reflection", career).headers(s.session()::apply)
-				.contentType(MediaType.APPLICATION_JSON).body(Map.of("answers", answers, "verdict", verdict))
-				.exchange().expectStatus().isCreated();
+		reflect(s.session(), career, 8, verdict);
 	}
 
 	private void reflectThree(Student s, String v1, String v2, String v3) {

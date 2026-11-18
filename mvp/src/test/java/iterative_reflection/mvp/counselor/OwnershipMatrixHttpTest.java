@@ -16,10 +16,10 @@ class OwnershipMatrixHttpTest extends CounselorDashboardTestSupport {
 		reflect(b, career, 9, "YES");
 		http.get().uri("/api/students/me/reflections").headers(a.session()::apply).exchange().expectStatus().isOk()
 				.expectBody().jsonPath("$.content.length()").isEqualTo(0);
-		// A has no reflection on that career, so there is nothing to read, whatever B wrote
+		// A never served nor reflected on that career, so there is nothing to read, whatever B wrote
 		int status = http.get().uri("/api/careers/{id}/reflection/versions", career).headers(a.session()::apply)
 				.exchange().returnResult().getStatus().value();
-		assertThat(status).isEqualTo(404);
+		assertThat(status).isEqualTo(409);
 		// and B's own data is untouched
 		http.get().uri("/api/students/me/reflections").headers(b.session()::apply).exchange().expectBody()
 				.jsonPath("$.content.length()").isEqualTo(1);

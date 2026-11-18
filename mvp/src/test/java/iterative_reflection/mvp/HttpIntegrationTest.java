@@ -2,6 +2,7 @@ package iterative_reflection.mvp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -71,6 +72,64 @@ public abstract class HttpIntegrationTest {
 	/** Creates a fresh STUDENT and signs in; the shortest way to get an authenticated session. */
 	protected Session signedInStudent() {
 		return signIn(createUser(uniqueEmail(), "correct horse battery", "STUDENT", false), "correct horse battery");
+	}
+
+	/**
+	 * Arranges the student's in-progress feed card to be exactly {@code careerId} (replacing any current card), the
+	 * state a student is in after the feed served that career.
+	 */
+	protected void serve(Session s, long careerId) {
+		Map<?, ?> me = http.get().uri("/api/me").headers(s::apply).exchange().expectStatus().isOk()
+				.returnResult(Map.class).getResponseBody();
+		long studentId = ((Number) me.get("id")).longValue();
+		jdbc.update("delete from feed_state where student_id = ?", studentId);
+		jdbc.update("insert into feed_state (student_id, career_id, served_at) values (?, ?, current_timestamp)",
+				studentId, careerId);
+	}
+
+	protected static final List<String> QUESTION_KEYS = List.of("interest", "values", "lifestyle", "responsibilities",
+			"sacrifices");
+
+	/** Id of the career with this title (independent source: SQL, not the API). */
+	protected long careerId(String title) {
+		return jdbc.queryForObject("select id from careers where title = ?", Long.class, title);
+	}
+
+	protected int lastPage(long careerId) {
+		return jdbc.queryForObject("select max(page_number) from career_pages where career_id = ?", Integer.class,
+				careerId);
+	}
+
+	/** An answer map covering every active question with the given score. */
+	protected Map<String, Object> answers(int score) {
+		Map<String, Object> m = new LinkedHashMap<>();
+		QUESTION_KEYS.forEach(k -> m.put(k, Map.of("score", score)));
+		return m;
+	}
+
+	/** Marks one page viewed, exactly as the client does (no arranging). */
+	protected ResponseSpec viewPage(Session s, long career, int page) {
+		return http.post().uri("/api/careers/{id}/pages/{n}/viewed", career, page).headers(s::apply).exchange();
+	}
+
+	/** Serves the career to the student, then views pages 1..{@code pages}, each expected to succeed. */
+	protected void view(Session s, long career, int pages) {
+		serve(s, career);
+		for (int p = 1; p <= pages; p++) {
+			viewPage(s, career, p).expectStatus().isOk();
+		}
+	}
+
+	/** Serves the career, views every page and submits a YES reflection with the given score on all questions. */
+	protected void reflect(Session s, long career, int score) {
+		reflect(s, career, score, "YES");
+	}
+
+	protected void reflect(Session s, long career, int score, String verdict) {
+		view(s, career, lastPage(career));
+		http.post().uri("/api/careers/{id}/reflection", career).headers(s::apply)
+				.contentType(MediaType.APPLICATION_JSON).body(Map.of("answers", answers(score), "verdict", verdict))
+				.exchange().expectStatus().isCreated();
 	}
 
 	/** Signs in over HTTP and returns the session (SESSION cookie plus CSRF token) to apply to later requests. */

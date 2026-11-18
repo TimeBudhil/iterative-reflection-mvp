@@ -56,9 +56,9 @@ class ReflectionEditHttpTest extends ReflectionTestSupport {
 	}
 
 	@Test
-	void editWithoutExistingReflectionIs404() {
+	void editWithoutExistingReflectionIs409() {
 		Session s = signedInStudent();
-		edit(s, careerId("Fixture Career Alpha"), body(answers(5), "YES")).expectStatus().isNotFound();
+		edit(s, careerId("Fixture Career Alpha"), body(answers(5), "YES")).expectStatus().isEqualTo(409);
 	}
 
 	@Test
@@ -92,7 +92,7 @@ class ReflectionEditHttpTest extends ReflectionTestSupport {
 	@Test
 	void historyIsOnlyVisibleToItsOwner() {
 		Reflected r = reflected(5, "YES");
-		history(signedInStudent(), r.career(), "").expectStatus().isNotFound();
+		history(signedInStudent(), r.career(), "").expectStatus().isEqualTo(409);
 	}
 
 	@Test

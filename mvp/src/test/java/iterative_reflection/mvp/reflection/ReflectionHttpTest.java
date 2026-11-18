@@ -136,8 +136,8 @@ class ReflectionHttpTest extends ReflectionTestSupport {
 		long alpha = careerId("Fixture Career Alpha");
 		long beta = careerId("Fixture Career Beta");
 		view(s, alpha, 3);
-		view(s, beta, 2);
 		submit(s, alpha, body(answers(5), "YES")).expectStatus().isCreated();
+		view(s, beta, 2);
 		submit(s, beta, body(answers(5), "NO")).expectStatus().isCreated();
 		list(s, "?size=1").expectBody()
 				.jsonPath("$.content.length()").isEqualTo(1)

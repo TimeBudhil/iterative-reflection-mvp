@@ -97,9 +97,7 @@ class AffinityHttpTest extends FeedTestSupport {
 	void verdictDoesNotAffectAffinity() {
 		Student st = student();
 		long beta = careerId("Fixture Career Beta");
-		for (int p = 1; p <= lastPage(beta); p++) {
-			view(st.session(), beta, p).expectStatus().isOk();
-		}
+		view(st.session(), beta, lastPage(beta));
 		submit(st.session(), beta, "NO", 10).expectStatus().isCreated();
 		assertThat(score(feed.topAffinities(st.id(), 5), "Fixture health")).isEqualTo(1.0);
 	}
@@ -108,9 +106,7 @@ class AffinityHttpTest extends FeedTestSupport {
 	void forcedFailureAfterAffinityUpdateLeavesNothingSaved() {
 		Student st = student();
 		long alpha = careerId("Fixture Career Alpha");
-		for (int p = 1; p <= 3; p++) {
-			view(st.session(), alpha, p).expectStatus().isOk();
-		}
+		view(st.session(), alpha, lastPage(alpha));
 		failure.fail.set(true);
 		submit(st.session(), alpha, "YES", 8).expectStatus().is5xxServerError();
 		assertThat(jdbc.queryForObject("select count(*) from affinity_contributions where student_id = ?",
@@ -126,9 +122,7 @@ class AffinityHttpTest extends FeedTestSupport {
 	void concurrentSubmitsYieldOneReflectionAndOneContributionSet() throws Exception {
 		Student st = student();
 		long alpha = careerId("Fixture Career Alpha");
-		for (int p = 1; p <= 3; p++) {
-			view(st.session(), alpha, p).expectStatus().isOk();
-		}
+		view(st.session(), alpha, lastPage(alpha));
 		ExecutorService pool = Executors.newFixedThreadPool(2);
 		try {
 			Callable<Integer> task = () -> submit(st.session(), alpha, "YES", 9).returnResult(String.class)

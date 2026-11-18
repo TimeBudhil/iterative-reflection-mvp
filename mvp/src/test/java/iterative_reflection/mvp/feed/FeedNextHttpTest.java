@@ -45,9 +45,9 @@ class FeedNextHttpTest extends FeedTestSupport {
 		long other = activeOrder().stream().filter(id -> id != served).findFirst().orElseThrow();
 		http.get().uri("/api/careers/{id}/experience", other).headers(s::apply).exchange()
 				.expectStatus().isEqualTo(409);
-		view(s, other, 1).expectStatus().isEqualTo(409);
+		viewPage(s, other, 1).expectStatus().isEqualTo(409);
 		http.get().uri("/api/careers/{id}/experience", served).headers(s::apply).exchange().expectStatus().isOk();
-		view(s, served, 1).expectStatus().isOk();
+		viewPage(s, served, 1).expectStatus().isOk();
 		assertThat(nextId(s)).isEqualTo(served);
 	}
 
@@ -60,7 +60,7 @@ class FeedNextHttpTest extends FeedTestSupport {
 		reflect(s, first, 7);
 		long second = nextId(s);
 		assertThat(second).isNotEqualTo(first).isIn(order);
-		view(s, second, 1).expectStatus().isOk();
+		viewPage(s, second, 1).expectStatus().isOk();
 	}
 
 	@Test

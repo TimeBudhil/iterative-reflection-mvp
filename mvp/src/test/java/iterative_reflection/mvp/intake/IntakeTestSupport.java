@@ -26,18 +26,7 @@ abstract class IntakeTestSupport extends HttpIntegrationTest {
 	/** Reflects (all pages viewed, all scores 8) on the given careers. */
 	void reflectOn(Session s, long... careers) {
 		for (long career : careers) {
-			int last = jdbc.queryForObject("select max(page_number) from career_pages where career_id = ?",
-					Integer.class, career);
-			for (int p = 1; p <= last; p++) {
-				http.post().uri("/api/careers/{id}/pages/{n}/viewed", career, p).headers(s::apply).exchange()
-						.expectStatus().isOk();
-			}
-			Map<String, Object> answers = new LinkedHashMap<>();
-			List.of("interest", "values", "lifestyle", "responsibilities", "sacrifices")
-					.forEach(k -> answers.put(k, Map.of("score", 8)));
-			http.post().uri("/api/careers/{id}/reflection", career).headers(s::apply)
-					.contentType(MediaType.APPLICATION_JSON).body(Map.of("answers", answers, "verdict", "YES"))
-					.exchange().expectStatus().isCreated();
+			reflect(s, career, 8);
 		}
 	}
 

@@ -47,23 +47,14 @@ abstract class CounselorDashboardTestSupport extends HttpIntegrationTest {
 				Long.class).get(n);
 	}
 
-	int pages(long career) {
-		return jdbc.queryForObject("select max(page_number) from career_pages where career_id = ?", Integer.class,
-				career);
-	}
-
 	void view(Student s, long career, int pages) {
-		for (int p = 1; p <= pages; p++) {
-			http.post().uri("/api/careers/{id}/pages/{n}/viewed", career, p).headers(s.session()::apply).exchange()
-					.expectStatus().isOk();
-		}
+		view(s.session(), career, pages);
 	}
 
 	void reflect(Student s, long career, int score, String verdict) {
-		view(s, career, pages(career));
+		view(s, career, lastPage(career));
 		Map<String, Object> answers = new LinkedHashMap<>();
-		List.of("interest", "values", "lifestyle", "responsibilities", "sacrifices")
-				.forEach(k -> answers.put(k, Map.of("score", score, "openText", "because " + k)));
+		QUESTION_KEYS.forEach(k -> answers.put(k, Map.of("score", score, "openText", "because " + k)));
 		http.post().uri("/api/careers/{id}/reflection", career).headers(s.session()::apply)
 				.contentType(MediaType.APPLICATION_JSON).body(Map.of("answers", answers, "verdict", verdict))
 				.exchange().expectStatus().isCreated();

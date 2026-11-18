@@ -16,10 +16,6 @@ class CareerExperienceHttpTest extends HttpIntegrationTest {
 	@Autowired
 	CareerCatalog catalog;
 
-	long careerId(String title) {
-		return jdbc.queryForObject("select id from careers where title = ?", Long.class, title);
-	}
-
 	ResponseSpec experience(Session s, long id) {
 		return http.get().uri("/api/careers/{id}/experience", id).headers(s::apply).exchange();
 	}
@@ -37,6 +33,7 @@ class CareerExperienceHttpTest extends HttpIntegrationTest {
 	@Test
 	void experienceReturnsCareerFieldsAndOrderedTypedBlocks() {
 		Session s = signedInStudent();
+		serve(s, careerId("Fixture Career Alpha"));
 		experience(s, careerId("Fixture Career Alpha")).expectStatus().isOk().expectBody()
 				.jsonPath("$.title").isEqualTo("Fixture Career Alpha")
 				.jsonPath("$.estimatedMinutes").isEqualTo(7)
@@ -68,6 +65,7 @@ class CareerExperienceHttpTest extends HttpIntegrationTest {
 	void viewingRecordsProgressAndReopeningReturnsIt() {
 		Session s = signedInStudent();
 		long id = careerId("Fixture Career Alpha");
+		serve(s, id);
 		viewed(s, id, 2).expectStatus().isOk().expectBody().jsonPath("$.lastViewedPage").isEqualTo(2);
 		experience(s, id).expectStatus().isOk().expectBody().jsonPath("$.lastViewedPage").isEqualTo(2);
 		// going back never lowers progress
@@ -81,6 +79,8 @@ class CareerExperienceHttpTest extends HttpIntegrationTest {
 		long id = careerId("Fixture Career Alpha");
 		Session a = signedInStudent();
 		Session b = signedInStudent();
+		serve(a, id);
+		serve(b, id);
 		viewed(a, id, 2).expectStatus().isOk();
 		experience(b, id).expectBody().jsonPath("$.lastViewedPage").isEqualTo(0);
 	}
@@ -89,6 +89,7 @@ class CareerExperienceHttpTest extends HttpIntegrationTest {
 	void pageOutsideTheCareerIs404() {
 		Session s = signedInStudent();
 		long id = careerId("Fixture Career Beta");
+		serve(s, id);
 		viewed(s, id, 0).expectStatus().isNotFound();
 		viewed(s, id, 3).expectStatus().isNotFound();
 		viewed(s, careerId("Fixture Career Retired"), 1).expectStatus().isNotFound();
@@ -112,6 +113,7 @@ class CareerExperienceHttpTest extends HttpIntegrationTest {
 	void lastViewedPageIsClampedWhenContentShrinks() {
 		Session s = signedInStudent();
 		long id = careerId("Fixture Career Alpha");
+		serve(s, id);
 		viewed(s, id, 3).expectStatus().isOk();
 		long studentId = jdbc.queryForObject("select max(student_id) from page_progress where career_id = ?",
 				Long.class, id);

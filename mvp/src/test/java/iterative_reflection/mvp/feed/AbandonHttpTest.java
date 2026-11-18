@@ -68,7 +68,7 @@ class AbandonHttpTest extends FeedTestSupport {
 	void abandonAfterViewingClearsCardAndServesAnother() {
 		Student st = student();
 		long served = nextId(st.session());
-		view(st.session(), served, 1).expectStatus().isOk();
+		viewPage(st.session(), served, 1).expectStatus().isOk();
 		abandon(st.session(), served).expectStatus().isNoContent();
 		assertThat(nextId(st.session())).isNotEqualTo(served);
 	}
@@ -83,7 +83,7 @@ class AbandonHttpTest extends FeedTestSupport {
 	void abandonAppliesPenaltyToEachTagOfTheCareer() {
 		Student st = student();
 		long alpha = careerId("Fixture Career Alpha");
-		view(st.session(), alpha, 2).expectStatus().isOk();
+		view(st.session(), alpha, 2);
 		abandon(st.session(), alpha).expectStatus().isNoContent();
 		assertThat(score(st, "Fixture technology")).isEqualTo(-0.5);
 		assertThat(score(st, "Fixture hands-on")).isEqualTo(-0.5);
@@ -99,7 +99,7 @@ class AbandonHttpTest extends FeedTestSupport {
 	void forcedFailureAfterPenaltyRollsBackTheAbandon() {
 		Student st = student();
 		long served = nextId(st.session());
-		view(st.session(), served, 1).expectStatus().isOk();
+		viewPage(st.session(), served, 1).expectStatus().isOk();
 		failure.fail.set(true);
 		abandon(st.session(), served).expectStatus().is5xxServerError();
 		failure.fail.set(false);
@@ -116,7 +116,7 @@ class AbandonHttpTest extends FeedTestSupport {
 		for (int i = 0; i < total; i++) {
 			long id = nextId(st.session());
 			assertThat(firstPass.add(id)).as("career %d served again before all unseen ones", id).isTrue();
-			view(st.session(), id, 1).expectStatus().isOk();
+			view(st.session(), id, 1);
 			abandon(st.session(), id).expectStatus().isNoContent();
 		}
 		assertThat(firstPass).containsExactlyInAnyOrderElementsOf(activeOrder());
