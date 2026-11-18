@@ -1,8 +1,10 @@
 package iterative_reflection.mvp.identity;
 
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-/** Public API of the identity module. Ticket 15 adds set active/inactive. */
+/** Public API of the identity module.  */
 public interface UserService {
 
 	Optional<UserSummary> findById(long id);
@@ -21,5 +23,14 @@ public interface UserService {
 	 * problem if the email exists (any case) and a 400 problem if the password breaks the length rules.
 	 */
 	UserSummary createCounselor(String email, String displayName, String temporaryPassword);
+
+	/** Users with the role, newest first (id descending). */
+	Page<UserSummary> findByRole(Role role, Pageable pageable);
+
+	/**
+	 * Activates or deactivates the user. Deactivating also deletes all of the user's sessions from the store, so
+	 * their next request gets 401. Throws a 404 problem if the user does not exist.
+	 */
+	UserSummary setActive(long userId, boolean active);
 
 }

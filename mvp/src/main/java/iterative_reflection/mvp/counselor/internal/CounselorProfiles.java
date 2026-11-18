@@ -3,6 +3,7 @@ package iterative_reflection.mvp.counselor.internal;
 import iterative_reflection.mvp.counselor.CounselorProfile;
 import iterative_reflection.mvp.counselor.CounselorService;
 import iterative_reflection.mvp.counselor.CounselorLink;
+import iterative_reflection.mvp.counselor.CounselorOverview;
 import iterative_reflection.mvp.identity.UserService;
 import iterative_reflection.mvp.identity.UserSummary;
 import java.time.Clock;
@@ -122,6 +123,15 @@ class CounselorProfiles implements CounselorService {
 				.orElseThrow(() -> problem(HttpStatus.NOT_FOUND, "No counselor profile."));
 		e.joinCode = newUniqueCode();
 		return toProfile(profiles.saveAndFlush(e));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public java.util.Map<Long, CounselorOverview> overviews(java.util.Collection<Long> counselorIds) {
+		java.util.Map<Long, CounselorOverview> result = new java.util.HashMap<>();
+		profiles.findAllById(counselorIds).forEach(p -> result.put(p.userId,
+				new CounselorOverview(p.joinCode, links.countByCounselorIdAndRevokedAtIsNull(p.userId))));
+		return result;
 	}
 
 	private static CounselorLink toLink(CounselorLinkEntity l, UserSummary counselor) {

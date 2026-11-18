@@ -13,6 +13,10 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.Locale;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.session.FindByIndexNameSessionRepository;
+import org.springframework.session.Session;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -39,8 +43,12 @@ class UserAccounts implements UserService, UserDetailsService {
 
 	private final ApplicationEventPublisher events;
 
+	private final FindByIndexNameSessionRepository<? extends Session> sessions;
+
 	UserAccounts(UserRepository users, PasswordEncoder passwordEncoder, Clock clock,
-			@Value("${identity.minimum-age:13}") int minimumAge, ApplicationEventPublisher events) {
+			@Value("${identity.minimum-age:13}") int minimumAge, ApplicationEventPublisher events,
+			FindByIndexNameSessionRepository<? extends Session> sessions) {
+		this.sessions = sessions;
 		this.events = events;
 		this.users = users;
 		this.passwordEncoder = passwordEncoder;
@@ -160,6 +168,26 @@ class UserAccounts implements UserService, UserDetailsService {
 		UserEntity user = users.findById(id).orElseThrow();
 		user.displayName = displayName.trim();
 		return toSummary(users.saveAndFlush(user));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Page<UserSummary> findByRole(Role role, Pageable pageable) {
+		return users.findByRoleOrderByIdDesc(role, pageable).map(UserAccounts::toSummary);
+	}
+
+	@Override
+	@Transactional
+	public UserSummary setActive(long userId, boolean active) {
+		UserEntity user = users.findById(userId)
+				.orElseThrow(() -> problem(HttpStatus.NOT_FOUND, "No such user."));
+		user.active = active;
+		UserSummary saved = toSummary(users.saveAndFlush(user));
+		if (!active) {
+			// Session principal name is the lower-cased email (see loadUserByUsername).
+			sessions.findByPrincipalName(user.email).keySet().forEach(sessions::deleteById);
+		}
+		return saved;
 	}
 
 	@Override

@@ -15,4 +15,6 @@ interface CounselorLinkRepository extends JpaRepository<CounselorLinkEntity, Lon
 
 	boolean existsByCounselorIdAndStudentIdAndRevokedAtIsNull(long counselorId, long studentId);
 
+	long countByCounselorIdAndRevokedAtIsNull(long counselorId);
+
 }

@@ -1,5 +1,7 @@
 package iterative_reflection.mvp.counselor;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,5 +35,8 @@ public interface CounselorService {
 
 	/** Replaces the counselor's join code; existing links are unaffected. Returns the new profile. */
 	CounselorProfile rotateJoinCode(long counselorId);
+
+	/** Join code and active linked-student count for each of the given counselor ids that has a profile. */
+	Map<Long, CounselorOverview> overviews(Collection<Long> counselorIds);
 
 }
