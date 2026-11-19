@@ -42,6 +42,7 @@ export function ReflectionForm({
     Object.fromEntries(Object.entries(initialDraft(questions, initial).texts).map(([k]) => [k, true])),
   );
   const sending = useRef(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   // Release the lock once the request has settled (pending went true, then false).
   useEffect(() => {
@@ -57,11 +58,11 @@ export function ReflectionForm({
     // Re-entrancy guard: a double-click can fire twice before React re-renders the disabled button (R5.5).
     if (sending.current || pending || !ready) return;
     sending.current = true;
+    setTouched({});
     onSubmit(toRequest(questions, draft));
   }
 
   // Server messages describe the submitted value: hide one as soon as the student edits that part again.
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const touch = (k: string) => setTouched((t) => ({ ...t, [k]: true }));
   const shown = (key: string, part: "score" | "openText") =>
     local.questions[key]?.[part] ?? (touched[`${key}.${part}`] ? undefined : server.questions[key]?.[part]);
@@ -99,7 +100,10 @@ export function ReflectionForm({
               </p>
             ) : null}
 
-            <details open={open[q.key] ?? false} onToggle={(e) => setOpen((o) => ({ ...o, [q.key]: e.currentTarget.open }))}>
+            <details open={open[q.key] ?? false} onToggle={(e) => {
+                const isOpen = e.currentTarget.open;
+                setOpen((o) => ({ ...o, [q.key]: isOpen }));
+              }}>
               <summary className="cursor-pointer text-sm underline">{q.openPrompt}</summary>
               <div className="mt-2 space-y-1">
                 <textarea
