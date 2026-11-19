@@ -1,0 +1,58 @@
+# Local rehearsal of the production setup: nginx (HTTPS) -> Next standalone + Spring (prod profile) -> Postgres.
+# See README.md. The backend image is built beforehand with ./build-backend.sh (buildpacks, no Dockerfile in mvp/).
+name: iterative-reflection
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-mvp}
+      POSTGRES_USER: ${DB_USERNAME:?set DB_USERNAME in deploy/.env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in deploy/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    image: ${BACKEND_IMAGE:-iterative-reflection/mvp:rehearsal}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-mvp}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL in deploy/.env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in deploy/.env}
+      # The public origin (prod properties leave app.frontend-origin at the dev default). Set here, not in mvp/.
+      APP_FRONTEND_ORIGIN: https://localhost
+      FORWARD_HEADERS_STRATEGY: native
+    # No published ports: only nginx reaches it.
+    expose:
+      - "8080"
+
+  frontend:
+    build:
+      context: ../iterative-reflection-frontend
+    expose:
+      - "3000"
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+
+volumes:
+  pgdata:
