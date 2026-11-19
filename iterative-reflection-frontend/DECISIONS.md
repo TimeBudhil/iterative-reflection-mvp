@@ -115,6 +115,14 @@ _Last updated: 2026-11-18_
 - Error copy never shows backend `detail` (problem bodies have none); 5xx/network show a retry panel with `X-Request-Id` when present.
 - Playwright `expect` timeout raised to 15s: first-hit dev compiles on this machine exceed 5s.
 
+## Intake and intake prompt (ticket 15)
+
+- **New vs edit** is decided by `GET /api/intake`: the 404 (it has no `detail`) maps to `null` in `useIntake`, so a missing intake is data, not an error. `null` means POST and then the feed; otherwise PUT and then Settings.
+- **PUT replaces every answer**, so `buildRequest` always sends the whole form (blank answers dropped); clearing a field in edit mode removes that answer.
+- **409 handling:** only the "Reflect on at least 3 careers..." detail swaps the form for "The intake opens after your 3rd reflection."; the other 409 ("already submitted") shows its detail inline.
+- **Prompt modal** (`IntakePromptModal` on the feed) is driven by `intakePromptDue` from `/api/me`. Both "Not now" and "Fill it in" call `POST /api/intake/dismiss` first (R3.5: it must not return after either); Esc/overlay counts as "Not now".
+- **Interests card** is a child of `<SettingsPage>` in `src/app/student/settings/page.tsx`, after "My counselors".
+
 ## My Journey (ticket 13)
 
 - The shared `useReflectedCareers` query now walks every page at `size=100` (stops at `page.totalPages`) and returns `{ content }`. My Journey, review mode and the reflect page all use it; there is no second reflections query.

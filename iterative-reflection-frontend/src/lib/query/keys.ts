@@ -12,5 +12,7 @@ export const queryKeys = {
   counselorStudent: (id: number | string) => ["counselor", "student", String(id)] as const,
   counselorLinks: ["student", "counselors"] as const,
   feed: ["feed"] as const,
+  intake: ["intake"] as const,
+  intakeQuestions: ["intake-questions"] as const,
   experience: (careerId: number | string) => ["experience", String(careerId)] as const,
 };
