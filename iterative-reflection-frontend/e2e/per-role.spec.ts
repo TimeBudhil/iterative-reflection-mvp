@@ -1,5 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import { counselorContext } from "./support/seed-student";
+import { expect, test, type Locator, type Page } from "@playwright/test";
+import { counselorContext, seedLinkedStudent } from "./support/seed-student";
 
 // Per-role happy paths through the UI only, against the dev backend (N6.2). Emails are unique per run.
 const PASSWORD = "correct-horse-battery";
@@ -115,5 +115,147 @@ test.describe.serial("per-role happy paths", () => {
     await other.getByRole("button", { name: "Change password" }).click();
     await expect(other).toHaveURL(/\/counselor\/students$/);
     await other.context().close();
+  });
+});
+
+// N3.2: the same journeys with the keyboard only (Tab / Shift+Tab / Enter / Space / arrows / Escape). No click(), no fill().
+
+/** Tabs forward until `target` has focus. */
+async function tabTo(page: Page, target: Locator, max = 80) {
+  for (let i = 0; i < max; i++) {
+    if (await target.evaluate((el) => el === document.activeElement)) return;
+    await page.keyboard.press("Tab");
+  }
+  throw new Error("never focused the target by Tab");
+}
+
+async function typeInto(page: Page, field: Locator, text: string) {
+  await tabTo(page, field);
+  await page.keyboard.type(text);
+}
+
+async function keyboardSignIn(page: Page, email: string, password: string) {
+  await page.goto("/signin");
+  await typeInto(page, page.getByLabel("Email"), email);
+  await typeInto(page, page.getByLabel("Password"), password);
+  await page.keyboard.press("Enter");
+}
+
+/** Focus is visible when the focused element draws an outline or a box-shadow ring (or its label does). */
+async function expectFocusVisible(page: Page) {
+  const visible = await page.evaluate(() => {
+    const draws = (el: Element | null) => {
+      if (!el) return false;
+      const cs = getComputedStyle(el);
+      return (cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0) || cs.boxShadow !== "none";
+    };
+    const el = document.activeElement;
+    return draws(el) || draws(el?.closest("label") ?? null);
+  });
+  expect(visible).toBe(true);
+}
+
+async function expectFocusInside(page: Page, container: Locator) {
+  expect(await container.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+}
+
+test.describe("keyboard-only happy paths", () => {
+  test("student: read, reflect with the 1-10 scale, verdict and submit; the abandon dialog traps focus", async ({ page }) => {
+    const s = await seedLinkedStudent({ reflections: 0, abandon: false, intake: false });
+    await keyboardSignIn(page, s.email, s.password);
+    await expect(page).toHaveURL(/\/student\/feed$/, { timeout: 30_000 });
+
+    // Abandon dialog first: open, focus is trapped, Escape closes and returns focus to its trigger.
+    await tabTo(page, page.getByRole("link", { name: "Start", exact: true }));
+    await expectFocusVisible(page);
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/student\/careers\/\d+$/, { timeout: 30_000 });
+    const trigger = page.getByRole("button", { name: "This isn't for me" });
+    await tabTo(page, trigger);
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    for (let i = 0; i < 8; i++) {
+      await page.keyboard.press("Tab");
+      await expectFocusInside(page, dialog);
+    }
+    for (let i = 0; i < 3; i++) {
+      await page.keyboard.press("Shift+Tab");
+      await expectFocusInside(page, dialog);
+    }
+    await expectFocusVisible(page);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+
+    // Read to the last page with Next + Enter.
+    const indicator = page.getByTestId("page-indicator");
+    const last = Number((await indicator.textContent())!.match(/of (\d+)/)![1]);
+    for (let n = 2; n <= last; n++) {
+      await tabTo(page, page.getByRole("button", { name: "Next", exact: true }));
+      await page.keyboard.press("Enter");
+      await expect(indicator).toHaveText(`Page ${n} of ${last}`);
+    }
+    await tabTo(page, page.getByRole("link", { name: "Reflect on this career" }));
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/reflect$/);
+
+    // Each 1-10 scale: Tab into the group (lands on 1), ArrowRight x6 selects 7.
+    for (const key of ["interest", "values", "lifestyle", "responsibilities", "sacrifices"]) {
+      const radios = page.getByTestId(`question-${key}`).getByRole("radio");
+      await tabTo(page, radios.first());
+      await expectFocusVisible(page);
+      for (let i = 0; i < 6; i++) await page.keyboard.press("ArrowRight");
+      await expect(radios.nth(6)).toBeChecked();
+    }
+    await tabTo(page, page.getByRole("radio", { name: "YES", exact: true }));
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("radio", { name: "MAYBE", exact: true })).toBeChecked();
+    await tabTo(page, page.getByRole("button", { name: "Submit reflection" }));
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/student\/feed$/);
+  });
+
+  test("counselor: sign in and open a student's detail", async ({ page }) => {
+    const s = await seedLinkedStudent({ reflections: 1, abandon: false, intake: false });
+    await keyboardSignIn(page, "counselor@demo.example", "demo");
+    await expect(page).toHaveURL(/\/counselor\/students$/);
+    await tabTo(page, page.getByRole("link", { name: s.displayName }));
+    await expectFocusVisible(page);
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("heading", { level: 1, name: s.displayName })).toBeVisible();
+  });
+
+  test("admin: add-counselor dialog opens, traps focus, closes on Escape and creates by keyboard", async ({ page }) => {
+    await keyboardSignIn(page, "admin@demo.example", "demo");
+    await expect(page).toHaveURL(/\/admin\/metrics$/);
+    await tabTo(page, page.getByRole("link", { name: "Counselors", exact: true }));
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/admin\/counselors$/);
+    const add = page.getByRole("button", { name: "Add counselor" });
+    await tabTo(page, add);
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    for (let i = 0; i < 10; i++) {
+      await page.keyboard.press("Tab");
+      await expectFocusInside(page, dialog);
+    }
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(add).toBeFocused();
+
+    const stampKb = Date.now();
+    await page.keyboard.press("Enter");
+    await expect(dialog).toBeVisible();
+    await typeInto(page, dialog.getByLabel("Email"), `kb+${stampKb}@example.com`);
+    await typeInto(page, dialog.getByLabel("Display name"), `KB Counselor ${stampKb}`);
+    await typeInto(page, dialog.getByLabel("Temporary password"), TEMP);
+    await tabTo(page, dialog.getByRole("button", { name: "Create counselor" }));
+    await page.keyboard.press("Enter");
+    await tabTo(page, dialog.getByRole("button", { name: "Done" }));
+    await page.keyboard.press("Enter");
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByRole("table", { name: "Counselors" }).getByRole("row", { name: new RegExp(`KB Counselor ${stampKb}`) })).toBeVisible();
   });
 });
