@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { roleHome } from "@/lib/session/model";
 import { useMe } from "@/lib/session/session";
 import { SignInForm } from "./sign-in-form";
+import { SignUpForm } from "./sign-up-form";
 
 export function SignInView() {
   const router = useRouter();
@@ -42,8 +43,7 @@ export function SignInView() {
                 <SignInForm />
               </TabsContent>
               <TabsContent value="signup">
-                {/* Sign up form arrives with ticket 06. */}
-                <p className="text-sm text-muted-foreground">Sign up is coming soon.</p>
+                <SignUpForm />
               </TabsContent>
             </Tabs>
           ) : (

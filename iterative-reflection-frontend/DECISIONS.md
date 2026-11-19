@@ -50,6 +50,29 @@ _Last updated: 2026-11-18_
 - Session code: pure rules in `src/lib/session/model.ts` (role home, prefix guard, nav), React in `session.tsx` (`useMe`, `useSignIn`, `useSignOut`, `RoleGuard`). Query keys live in `src/lib/query/keys.ts`. Role layouts wrap `PortalShell`.
 - The 429 sign-in test mocks the response, because a real 429 would lock the shared demo accounts/IP for the other specs.
 
+## Counselor join code and students (ticket 17)
+
+- **Shared UI introduced here:** `PaginatedTable` (bound to `{content, page}`, 0-based page, skeleton, empty slot, retry panel), `ConfirmDialog`, `RetryPanel` (shows `X-Request-Id`), shadcn `dialog`/`table`/`sonner` (`Toaster` mounted in `providers.tsx`), `relativeTime`, `pageSummary`.
+- **Paged queries need a custom `querySerializer`:** the generated schema models Spring Pageable as one object param, which openapi-fetch serialises in a form the backend ignores (page 2 returned page 1). Send flat `page=N&size=20` instead.
+- **Rotate returns 200 `{joinCode}`**, and the profile query is invalidated so the new code appears.
+
+## Settings: Profile and Password (ticket 08)
+
+- **One shared `SettingsPage`** (`src/components/settings/settings-page.tsx`) backs all three role pages. It renders Profile then Password, then its `children`. Later cards (student My counselors, Interests) are built on `SettingsCard id title` and passed as children in `src/app/student/settings/page.tsx`; the `id` is the `#anchor`. Anchor scrolling is done in an effect because the cards mount after `/api/me` loads.
+- **Toasts:** `sonner`, mounted once in `src/app/providers.tsx` via `src/components/ui/sonner.tsx` (no next-themes). Use `toast.success(...)` from `"sonner"`.
+- **Wrong current password:** the backend's 400 has no `errors[]` field for it (only `detail`), so any 400 without a `newPassword` field error is shown on the current-password field.
+- The `PATCH /api/me` response replaces the cached `/api/me`, so the user menu updates without a reload. A password change keeps the session; the client re-primes the cleared XSRF cookie on the next mutation.
+- E2E uses a freshly signed-up student (API signup) so demo passwords never change; counselor and admin specs only check the cards and anchors.
+
+## Deploy rehearsal (ticket 05)
+
+- **Backend image built by `deploy/build-backend.sh`, not compose:** buildpacks (`spring-boot:build-image`) is a Maven goal, so compose just runs the tagged image. `BP_JVM_VERSION=25` matches the pom. `mvp/` is untouched (only the git-ignored `mvp/target/` is written).
+- **`APP_FRONTEND_ORIGIN=https://localhost` set in compose:** the prod profile leaves `app.frontend-origin` at the dev default. nginx also sends `Host $host`, `X-Forwarded-Proto` and `X-Forwarded-For $remote_addr`, otherwise the backend's CORS check 403s every mutation.
+- **`X-Forwarded-For` is `$remote_addr`, not appended:** a client cannot spoof its address to the login limiter.
+- **Dockerfile copies `public/` and `.next/static` by hand:** `output: 'standalone'` omits both. The builder stage runs `mkdir -p public` since the repo has no `public/` yet.
+- **Smoke config is separate (`playwright.smoke.config.ts`, specs in `smoke/`):** so `pnpm e2e` (dev backend, demo accounts) never picks them up. It uses `ignoreHTTPSErrors` because Playwright's Firefox/WebKit ignore the system trust store holding the mkcert CA. Credentials come from `deploy/.env`.
+- **Not run on the dev machine:** no docker/mkcert, so the compose stack and `pnpm e2e:smoke` are unverified until someone runs the README steps.
+
 ## Feed card (ticket 09)
 
 - **No parallel experience fetch (diverges from R3.2):** the real `GET /api/feed/next` card already carries `lastViewedPage` (and the generated schema has it), so "Start" / "Continue (page n of m)" is computed from the card alone (`src/lib/feed/model.ts`). One request, no loading flash of "Start". `queryKeys.experience(id)` is added for the career page ticket.
@@ -61,3 +84,4 @@ _Last updated: 2026-11-18_
 - **Mode needs both queries:** the viewer waits for the experience and the reflections list (`queryKeys.reflections`, size=100) before rendering, so it never flashes the wrong mode. Review mode starts at page 1 and makes no `viewed` calls (the in-progress guard would 409 them).
 - **Pageable on the wire:** the generated schema types `pageable` as one object, but Spring wants flat `?page=0&size=100`, so `useReflectedCareers` passes a `querySerializer`. Other tickets reading that list should reuse this hook and key.
 - **Unavailable state** covers a 404/409 from the experience GET and from `viewed`.
+- **Signup error mapping (R1.6):** the backend's under-13 400 has only `detail` (no `errors[]`) and a bad counselor code is a 404 with no field, so the form maps by status: 400+`errors[]` to fields, 400 mentioning "13" to birthdate, 404 to the code field, 409 to email. Under-13 is also checked client-side. Signup does not start a session, so the form signs in right after the 201.
