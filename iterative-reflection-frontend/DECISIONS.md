@@ -42,3 +42,10 @@ _Last updated: 2026-11-18_
 - **CORS forces the dev port (R11.2):** the backend only accepts `Origin: http://localhost:5173` (`app.frontend-origin`); anything else gets a text/plain 403 "Invalid CORS request" through the dev rewrite. `pnpm dev` and Playwright default to port 5173. Other ports need the backend started with `--app.frontend-origin`.
 - **Client built on `openapi-fetch`** with a custom `fetch` that holds the CSRF/error logic; errors are thrown as `ApiError` (network failure is `status: 0`).
 - `vitest.config.ts` renamed to `.mts` (ESM in a CommonJS package).
+
+## Session and portal shells (ticket 03)
+
+- `POST /api/auth/signout` is a Spring logout filter, absent from OpenAPI, so `src/lib/api/client.ts` declares it in `ManualPaths`.
+- The temporary `/debug/me` page is gone; the clean-browser CSRF e2e now signs in through `/signin`.
+- Session code: pure rules in `src/lib/session/model.ts` (role home, prefix guard, nav), React in `session.tsx` (`useMe`, `useSignIn`, `useSignOut`, `RoleGuard`). Query keys live in `src/lib/query/keys.ts`. Role layouts wrap `PortalShell`.
+- The 429 sign-in test mocks the response, because a real 429 would lock the shared demo accounts/IP for the other specs.

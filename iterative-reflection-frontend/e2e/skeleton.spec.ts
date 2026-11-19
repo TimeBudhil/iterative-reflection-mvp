@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-test("home page renders", async ({ page }) => {
+test("signed-out root goes to the sign-in page", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Iterative Reflection" })).toBeVisible();
+  await expect(page).toHaveURL(/\/signin$/);
+  await expect(page.getByText("Iterative Reflection")).toBeVisible();
 });
 
 test("CSP header restricts framing and embeds", async ({ request }) => {
