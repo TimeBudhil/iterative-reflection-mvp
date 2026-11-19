@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Iterative Reflection frontend
 
-## Getting Started
+Next.js 16 (App Router), React 19, Tailwind + shadcn/ui, TanStack Query. See `SPEC.md` for the design.
 
-First, run the development server:
+## Running dev
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Requires Node 24 (`.nvmrc`) and pnpm via corepack (`corepack enable`).
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Start the backend (frozen, in `../mvp`):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+   ```bash
+   cd ../mvp && ./mvnw spring-boot:run
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   It listens on `http://localhost:8080`. To use another port add
+   `-Dspring-boot.run.arguments=--server.port=<port>`.
 
-## Learn More
+2. Start the frontend:
 
-To learn more about Next.js, take a look at the following resources:
+   ```bash
+   pnpm install
+   BACKEND_URL=http://localhost:8080 pnpm dev   # BACKEND_URL defaults to this value
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   The dev server rewrites `/api/*` to `BACKEND_URL`, so the browser only talks to one origin.
+   Check with `curl -i localhost:3000/api/me` (expect a 401 problem+json).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
+| Script           | What it does                                                         |
+| ---------------- | -------------------------------------------------------------------- |
+| `pnpm dev`       | Next dev server                                                      |
+| `pnpm build`     | Production build (`output: 'standalone'`)                            |
+| `pnpm start`     | Run the standalone server (`node .next/standalone/server.js`)        |
+| `pnpm lint`      | ESLint                                                               |
+| `pnpm typecheck` | `next typegen` then `tsc --noEmit`                                   |
+| `pnpm test`      | Vitest                                                               |
+| `pnpm e2e`       | Playwright; starts `next dev` on `$NEXT_PORT` (default 3000) and needs the backend running at `BACKEND_URL` (run `pnpm exec playwright install chromium` once) |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Notes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- The production server needs no runtime env vars. The CSP in `next.config.ts` lists the backend's `career.embed-hosts`; keep both in sync.
