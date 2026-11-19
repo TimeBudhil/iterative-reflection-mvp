@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronsUpDown } from "lucide-react";
+import { ChevronsUpDown, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -57,10 +58,27 @@ function UserMenu({ me }: { me: Me }) {
 function Shell({ me, children }: { me: Me; children: React.ReactNode }) {
   const pathname = usePathname();
   const denied = useAccessDenied(pathname);
+  // N4.2: below 1280 px the sidebar collapses behind a menu button in a top bar.
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <div className="flex min-h-screen">
-      <aside className="flex w-60 shrink-0 flex-col border-r p-3">
-        <div className="px-3 py-2 text-base font-semibold">Iterative Reflection</div>
+    <div className="flex min-h-screen flex-col xl:flex-row">
+      <aside className="flex shrink-0 flex-col border-b p-3 xl:w-60 xl:border-r xl:border-b-0">
+        <div className="flex items-center justify-between">
+          <div className="px-3 py-2 text-base font-semibold">Iterative Reflection</div>
+          <button
+            type="button"
+            className="rounded-md p-2 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring xl:hidden"
+            aria-expanded={menuOpen}
+            aria-controls="portal-menu"
+            aria-label="Menu"
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            {menuOpen ? <X className="size-5" aria-hidden /> : <Menu className="size-5" aria-hidden />}
+          </button>
+        </div>
+        <div id="portal-menu" className={cn("flex-1 flex-col", menuOpen ? "flex" : "hidden xl:flex")} onClick={(e) => {
+          if ((e.target as HTMLElement).closest("a")) setMenuOpen(false);
+        }}>
         <nav aria-label="Main" className="mt-4 flex flex-1 flex-col gap-1">
           {navFor(me.role).map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -80,6 +98,7 @@ function Shell({ me, children }: { me: Me; children: React.ReactNode }) {
           })}
         </nav>
         <UserMenu me={me} />
+        </div>
       </aside>
       <main className="min-w-0 flex-1 p-8">
         {denied ? <NoAccessPanel homeHref={roleHome(me.role)} /> : children}
