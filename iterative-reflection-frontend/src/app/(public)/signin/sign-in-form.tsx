@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { roleHome } from "@/lib/session/model";
+import { landingFor } from "@/lib/session/model";
 import { useSignIn } from "@/lib/session/session";
 
 function errorCopy(error: unknown): string {
@@ -28,7 +28,7 @@ export function SignInForm() {
         e.preventDefault();
         signIn.mutate(
           { email, password },
-          { onSuccess: (me) => router.replace(roleHome(me.role)) },
+          { onSuccess: (me) => router.replace(landingFor(me)) },
         );
       }}
     >

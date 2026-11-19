@@ -56,6 +56,21 @@ export function useSignOut() {
   });
 }
 
+/** `PUT /api/me/password`, then refetch `/api/me` so the guards see `mustChangePassword: false`. Resolves to the fresh user. */
+export function useChangePassword() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { currentPassword: string; newPassword: string }) => {
+      await api.PUT("/api/me/password", { body });
+      return await qc.fetchQuery({
+        queryKey: queryKeys.me,
+        queryFn: async () => (await api.GET("/api/me")).data as Me,
+        staleTime: 0,
+      });
+    },
+  });
+}
+
 /**
  * Renders `fallback` (a skeleton) until the user is confirmed to hold `role`; otherwise redirects
  * (signed out -> /signin, wrong role -> that role's home). Children are never rendered before confirmation.
@@ -72,7 +87,7 @@ export function RoleGuard({
   const me = useMe();
   const router = useRouter();
   const pathname = usePathname();
-  const decision = me.data ? guardDecision(me.data.role, pathname) : null;
+  const decision = me.data ? guardDecision(me.data.role, pathname, me.data.mustChangePassword) : null;
 
   useEffect(() => {
     if (isUnauthorized(me.error)) router.replace("/signin");
