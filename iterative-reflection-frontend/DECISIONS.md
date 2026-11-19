@@ -58,3 +58,8 @@ _Last updated: 2026-11-18_
 - **Dockerfile copies `public/` and `.next/static` by hand:** `output: 'standalone'` omits both. The builder stage runs `mkdir -p public` since the repo has no `public/` yet.
 - **Smoke config is separate (`playwright.smoke.config.ts`, specs in `smoke/`):** so `pnpm e2e` (dev backend, demo accounts) never picks them up. It uses `ignoreHTTPSErrors` because Playwright's Firefox/WebKit ignore the system trust store holding the mkcert CA. Credentials come from `deploy/.env`.
 - **Not run on the dev machine:** no docker/mkcert, so the compose stack and `pnpm e2e:smoke` are unverified until someone runs the README steps.
+
+## Feed card (ticket 09)
+
+- **No parallel experience fetch (diverges from R3.2):** the real `GET /api/feed/next` card already carries `lastViewedPage` (and the generated schema has it), so "Start" / "Continue (page n of m)" is computed from the card alone (`src/lib/feed/model.ts`). One request, no loading flash of "Start". `queryKeys.experience(id)` is added for the career page ticket.
+- **"n" is `lastViewedPage`:** Continue shows how many pages are already viewed, out of `lastPage`.
