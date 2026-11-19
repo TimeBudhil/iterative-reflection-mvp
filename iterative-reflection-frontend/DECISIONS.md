@@ -114,3 +114,9 @@ _Last updated: 2026-11-18_
 - Signing out sets a short-lived flag so the cache-clear refetch 401s are not reported as an expiry. Back after sign-out lands on `/signin?next=...&expired=1` (the guard's normal 401 path); the ticket 03 e2e was relaxed to accept the query.
 - Error copy never shows backend `detail` (problem bodies have none); 5xx/network show a retry panel with `X-Request-Id` when present.
 - Playwright `expect` timeout raised to 15s: first-hit dev compiles on this machine exceed 5s.
+
+## Admin audit log (ticket 21)
+
+- `useAuditLog(page, studentId?)` (`src/lib/admin/audit.ts`) uses the flat `page=N&size=20[&studentId=N]` `querySerializer` (the generated Pageable object param is ignored by Spring). Key: `queryKeys.adminAudit`.
+- Counselor names come from `useAdminCounselors(0, 100)` + `counselorNameMap`; ids missing from the first 100 counselors (or while the list is unavailable) render as `#id` (`counselorLabel`).
+- The student-ID filter is applied on submit (not per keystroke), validated client-side as a positive integer (leading `#` tolerated), and resets to page 1. Timestamps use the browser-local `toLocaleString()`.
