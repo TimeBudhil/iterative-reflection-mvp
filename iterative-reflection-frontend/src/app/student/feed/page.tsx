@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { IntakePromptModal } from "@/components/intake/intake-prompt-modal";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { feedView } from "@/lib/feed/model";
@@ -11,6 +12,7 @@ export default function Page() {
   return (
     <div className="max-w-2xl space-y-4">
       <h1 className="text-2xl font-semibold">Feed</h1>
+      <IntakePromptModal />
       {feed.isPending ? (
         <Skeleton className="h-48 w-full" aria-label="Loading" />
       ) : feed.isError ? (
