@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Check, Copy, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,14 @@ import type { components } from "@/lib/api/schema";
 type StudentRow = components["schemas"]["Row"];
 
 const columns: Column<StudentRow>[] = [
-  { header: "Name", cell: (r) => r.displayName },
+  {
+    header: "Name",
+    cell: (r) => (
+      <Link href={`/counselor/students/${r.studentId}`} className="font-medium underline-offset-4 hover:underline">
+        {r.displayName}
+      </Link>
+    ),
+  },
   { header: "Seen", cell: (r) => r.careersSeen, className: "text-right" },
   { header: "Reflected", cell: (r) => r.reflected, className: "text-right" },
   { header: "Abandoned", cell: (r) => r.abandoned, className: "text-right" },

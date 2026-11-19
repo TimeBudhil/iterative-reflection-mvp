@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { BlockView } from "./blocks";
+import { AbandonButton } from "./abandon-button";
 import {
   isUnavailable,
   modeFor,
@@ -124,6 +125,7 @@ function Pager({ careerId, experience, mode }: { careerId: number; experience: E
             Reflect on this career
           </Link>
         ) : null}
+        {mode === "in-progress" ? <AbandonButton careerId={careerId} /> : null}
       </div>
     </article>
   );

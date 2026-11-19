@@ -3,6 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
+import { toStudentDetailView, type RawStudentDetail } from "./student-detail";
 
 export const STUDENTS_PAGE_SIZE = 20;
 
@@ -18,6 +19,16 @@ export function useRotateJoinCode() {
   return useMutation({
     mutationFn: async () => (await api.POST("/api/counselor/me/join-code/rotate")).data!,
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.counselorMe }),
+  });
+}
+
+export function useStudentDetail(studentId: string) {
+  return useQuery({
+    queryKey: queryKeys.counselorStudent(studentId),
+    queryFn: async () =>
+      toStudentDetailView(
+        (await api.GET("/api/counselor/students/{studentId}", { params: { path: { studentId: Number(studentId) } } })).data as RawStudentDetail,
+      ),
   });
 }
 
