@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { request, type APIRequestContext } from "@playwright/test";
 
 const baseURL = `http://localhost:${process.env.NEXT_PORT ?? 5173}`;
@@ -35,7 +36,7 @@ export type SeededStudent = { email: string; password: string; displayName: stri
 export async function seedLinkedStudent(opts: { reflections: number; abandon: boolean; intake: boolean }): Promise<SeededStudent> {
   const counselor = await counselorContext();
   const { joinCode } = await (await counselor.get("/api/counselor/me")).json();
-  const stamp = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+  const stamp = `${Date.now()}${randomUUID().slice(0, 6)}`;
   const student = { email: `seed${stamp}@e2e.example`, password: "password12345", displayName: `Seed ${stamp}` };
   const c = await apiContext();
   await send(c, "/api/auth/signup", {

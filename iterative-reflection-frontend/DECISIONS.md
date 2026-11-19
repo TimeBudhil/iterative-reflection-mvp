@@ -85,6 +85,14 @@ _Last updated: 2026-11-18_
 - **Affinity scores are not shown:** R9.5 asks for tag + category only.
 - **E2E seeding:** `e2e/support/seed-student.ts` builds a linked student with reflections, an abandoned career and intake through the real API (the demo students have no activity).
 
+## Student counselor links (ticket 16)
+
+- **Link errors are mapped by status, not backend text:** the backend says "Unknown join code." / "Already linked to this counselor." / "Too many failed link attempts. Try again later."; the UI shows the spec wording (R8.5) from `src/lib/counselor-links/model.ts`.
+- **Codes are normalized client-side** (whitespace stripped, upper-cased) since the backend is case-insensitive.
+- **List is one request with `size=100`** and the flat `page/size` serializer (no pager in the card); link and revoke invalidate `queryKeys.counselorLinks`.
+- The 429 and Inactive-badge e2e cases mock the response so the real 10-failure limiter and demo data stay untouched.
+
+
 ## Experience viewer (ticket 10)
 
 - **Mode-driven viewer:** `src/lib/experience/model.ts` holds the pure rules (`ViewerMode = "in-progress" | "review"`, `modeFor`, `startPage`, `viewerState`). `viewerState` already exposes `showEditReflection` and `freeNavigation` (review), so tickets 11 and 14 add their buttons in the marked "mode actions" block of `src/components/experience/viewer.tsx` without restructuring.
