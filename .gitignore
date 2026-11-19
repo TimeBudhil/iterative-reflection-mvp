@@ -1,0 +1,7 @@
+.scratch/
+
+# deploy rehearsal: secrets and certificates
+deploy/.env
+deploy/certs/*
+!deploy/certs/.gitkeep
+*.pem
