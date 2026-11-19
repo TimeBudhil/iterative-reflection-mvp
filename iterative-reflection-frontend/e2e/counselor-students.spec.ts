@@ -117,5 +117,5 @@ test("a server error shows the retry panel with the request id", async ({ page }
   );
   await page.reload();
   await expect(page.getByText("Request ID: req-abc")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
 });

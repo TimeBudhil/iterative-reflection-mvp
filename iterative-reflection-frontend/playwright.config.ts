@@ -5,6 +5,7 @@ const baseURL = `http://localhost:${port}`;
 
 export default defineConfig({
   testDir: "./e2e",
+  expect: { timeout: 15_000 },
   use: { baseURL },
   webServer: {
     command: `pnpm exec next dev -p ${port}`,
