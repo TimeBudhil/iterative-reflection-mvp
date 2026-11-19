@@ -73,3 +73,11 @@ export function mergeServerErrors(fieldErrors: Record<string, string>): FormErro
   }
   return errors;
 }
+
+export const CONCURRENT_EDIT_MESSAGE = "Someone saved this reflection at the same time. Reload and try again.";
+
+/** PUT answers 409 "The reflection was changed concurrently; retry." on an optimistic-lock collision (R5.6). */
+export function isConcurrentEdit(error: unknown): boolean {
+  const e = error as { status?: number; detail?: string } | null;
+  return e?.status === 409 && /concurrent/i.test(e.detail ?? "");
+}

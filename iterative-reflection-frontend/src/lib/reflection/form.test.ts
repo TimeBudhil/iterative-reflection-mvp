@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canSubmit, clientErrors, initialDraft, mergeServerErrors, toRequest, type Question } from "./form";
+import { canSubmit, clientErrors, isConcurrentEdit, initialDraft, mergeServerErrors, toRequest, type Question } from "./form";
 
 const questions: Question[] = [
   { key: "interest", prompt: "I?", openPrompt: "Why?", minScore: 1, maxScore: 10 },
@@ -55,5 +55,14 @@ describe("reflection form model", () => {
     expect(e.questions.interest?.openText).toMatch(/1000/);
     expect(e.verdict).toMatch(/verdict/);
     expect(e.other).toEqual(["Unknown question."]);
+  });
+});
+
+describe("isConcurrentEdit", () => {
+  it("matches only the optimistic-lock 409", () => {
+    expect(isConcurrentEdit({ status: 409, detail: "The reflection was changed concurrently; retry." })).toBe(true);
+    expect(isConcurrentEdit({ status: 409, detail: "Finish your current career before starting another." })).toBe(false);
+    expect(isConcurrentEdit({ status: 400, detail: "concurrent" })).toBe(false);
+    expect(isConcurrentEdit(null)).toBe(false);
   });
 });
