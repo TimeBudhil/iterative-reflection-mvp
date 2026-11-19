@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "@/lib/api/client";
-import { ageOn, mapSignupError, validateSignup, type SignupValues } from "./model";
+import { ageOn, isUnder13, mapSignupError, validateSignup, type SignupValues } from "./model";
 
 const today = new Date("2026-11-18T12:00:00Z");
 const ok: SignupValues = {
@@ -54,5 +54,14 @@ describe("mapSignupError", () => {
   it("falls back to a general message", () => {
     expect(mapSignupError(new ApiError({ status: 500, detail: "x" })).general).toBeDefined();
     expect(mapSignupError(new Error("boom")).general).toBeDefined();
+  });
+});
+
+describe("isUnder13", () => {
+  it("matches the 400 that names the age limit", () => {
+    expect(isUnder13(new ApiError({ status: 400, detail: "You must be at least 13 years old to sign up." }))).toBe(true);
+    expect(isUnder13(new ApiError({ status: 400, detail: "Validation failed." }))).toBe(false);
+    expect(isUnder13(new ApiError({ status: 409, detail: "13" }))).toBe(false);
+    expect(isUnder13(null)).toBe(false);
   });
 });

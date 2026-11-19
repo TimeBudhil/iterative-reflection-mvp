@@ -8,7 +8,7 @@ import { ReflectionForm } from "@/components/reflection/reflection-form";
 import { useExperience, useReflectedCareers } from "@/lib/experience/queries";
 import { useEditReflection, useReflectionQuestions, useSubmitReflection } from "@/lib/reflection/queries";
 import { journeyModel } from "@/lib/journey/model";
-import { CONCURRENT_EDIT_MESSAGE, isConcurrentEdit, type ExistingReflection, type Question } from "@/lib/reflection/form";
+import { CONCURRENT_EDIT_MESSAGE, isConcurrentEdit, isUnviewedLastPage, type ExistingReflection, type Question } from "@/lib/reflection/form";
 import { statusCopy } from "@/lib/api/error-copy";
 import type { ApiError } from "@/lib/api/client";
 
@@ -55,7 +55,7 @@ function ReflectBody({
   const mutation = editing ? edit : submit;
 
   const error = mutation.error as ApiError | null;
-  const mustViewAll = !editing && error?.status === 409 && /whole experience/i.test(error.detail);
+  const mustViewAll = !editing && isUnviewedLastPage(error);
   const concurrent = editing && isConcurrentEdit(error);
 
   return (
@@ -100,8 +100,7 @@ function ReflectBody({
             : submit.mutate(body, {
                 onSuccess: () => router.push("/student/feed"),
                 onError: (e) => {
-                  const err = e as ApiError;
-                  if (err.status === 409 && /whole experience/i.test(err.detail)) router.push(`/student/careers/${careerId}`);
+                  if (isUnviewedLastPage(e)) router.push(`/student/careers/${careerId}`);
                 },
               })
         }

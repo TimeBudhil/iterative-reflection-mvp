@@ -50,6 +50,12 @@ export function validateSignup(v: SignupValues, today: Date = new Date()): Field
   return errors;
 }
 
+/** The under-13 400 carries no field, only a detail naming the age limit (see notes/backend-api.md). */
+export function isUnder13(error: unknown): boolean {
+  const e = error as { status?: number; detail?: string } | null;
+  return e?.status === 400 && /13/.test(e.detail ?? "");
+}
+
 export type MappedSignupError = { fields: FieldErrors; general?: string };
 
 const SIGNUP_FIELDS: SignupField[] = ["email", "password", "displayName", "birthdate", "counselorCode"];
@@ -65,7 +71,7 @@ export function mapSignupError(error: unknown): MappedSignupError {
   if (e.status === 400) {
     const fields: FieldErrors = mapFieldErrors(error, SIGNUP_FIELDS);
     if (Object.keys(fields).length > 0) return { fields };
-    if (/13/.test(e.detail ?? "")) return { fields: { birthdate: UNDER_13 } };
+    if (isUnder13(error)) return { fields: { birthdate: UNDER_13 } };
     return generic;
   }
   if (e.status === 409) return { fields: { email: EMAIL_TAKEN } };
