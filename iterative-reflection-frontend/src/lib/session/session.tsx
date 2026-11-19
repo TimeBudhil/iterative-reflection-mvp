@@ -5,6 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
+import { RetryPanel } from "@/components/feedback/retry-panel";
+import { setSigningOut } from "./access";
 import { guardDecision, type Role } from "./model";
 
 export type Me = {
@@ -50,8 +52,10 @@ export function useSignOut() {
       }
     },
     onSuccess: () => {
-      qc.clear();
+      setSigningOut(true); // the refetches triggered by clearing the cache must not look like an expiry
       router.replace("/signin");
+      qc.clear();
+      setTimeout(() => setSigningOut(false), 1000);
     },
   });
 }
@@ -75,20 +79,13 @@ export function RoleGuard({
   const decision = me.data ? guardDecision(me.data.role, pathname) : null;
 
   useEffect(() => {
-    if (isUnauthorized(me.error)) router.replace("/signin");
+    // A 401 is redirected (with `next` and the expiry notice) by SessionEvents.
+    if (me.data?.mustChangePassword) router.replace("/change-password");
     else if (decision && !decision.allow) router.replace(decision.redirectTo);
-  }, [me.error, decision, router]);
+  }, [me.data?.mustChangePassword, decision, router]);
 
-  if (me.data && me.data.role === role && decision?.allow) return <>{children(me.data)}</>;
-  if (me.error && !isUnauthorized(me.error)) {
-    return (
-      <div className="p-8" role="alert">
-        <p>Something went wrong.</p>
-        <button type="button" className="mt-2 underline" onClick={() => me.refetch()}>
-          Try again
-        </button>
-      </div>
-    );
-  }
+  if (me.data && me.data.role === role && decision?.allow && !me.data.mustChangePassword) return <>{children(me.data)}</>;
+  // 401/403 on /api/me are handled by SessionEvents (redirect / refetch); keep the skeleton meanwhile.
+  if (me.error && !isUnauthorized(me.error) && (me.error as { status?: number }).status !== 403) return <RetryPanel error={me.error} onRetry={() => void me.refetch()} />;
   return <>{fallback}</>;
 }

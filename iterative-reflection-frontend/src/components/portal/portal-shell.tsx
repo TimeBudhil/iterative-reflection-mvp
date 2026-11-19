@@ -11,7 +11,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { navFor, settingsHref, type Role } from "@/lib/session/model";
+import { NoAccessPanel } from "@/components/feedback/no-access-panel";
+import { useAccessDenied } from "@/lib/session/access";
+import { navFor, roleHome, settingsHref, type Role } from "@/lib/session/model";
 import { RoleGuard, useSignOut, type Me } from "@/lib/session/session";
 
 function PortalSkeleton() {
@@ -54,6 +56,7 @@ function UserMenu({ me }: { me: Me }) {
 
 function Shell({ me, children }: { me: Me; children: React.ReactNode }) {
   const pathname = usePathname();
+  const denied = useAccessDenied(pathname);
   return (
     <div className="flex min-h-screen">
       <aside className="flex w-60 shrink-0 flex-col border-r p-3">
@@ -78,7 +81,9 @@ function Shell({ me, children }: { me: Me; children: React.ReactNode }) {
         </nav>
         <UserMenu me={me} />
       </aside>
-      <main className="min-w-0 flex-1 p-8">{children}</main>
+      <main className="min-w-0 flex-1 p-8">
+        {denied ? <NoAccessPanel homeHref={roleHome(me.role)} /> : children}
+      </main>
     </div>
   );
 }

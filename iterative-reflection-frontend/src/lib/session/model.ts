@@ -22,6 +22,33 @@ export function guardDecision(role: Role, pathname: string): GuardDecision {
     : { allow: false, redirectTo: HOME[role] };
 }
 
+/**
+ * Where to go after sign-in. `next` is kept only if it's a plain same-site path under the role's own prefix;
+ * anything else (other roles, absolute/protocol-relative URLs, backslashes, `..`, `//`) returns the role home.
+ */
+export function safeReturnPath(role: Role, next: string | null | undefined): string {
+  if (!next || !next.startsWith("/") || next.includes("\\")) return HOME[role];
+  const path = next.split(/[?#]/)[0];
+  const segments = path.split("/");
+  if (path.includes("//") || segments.includes("..") || segments.includes(".")) return HOME[role];
+  const prefix = PREFIX[role];
+  return path === prefix || path.startsWith(`${prefix}/`) ? next : HOME[role];
+}
+
+/** The sign-in URL for a 401 at `currentPath` (path + query): carries `next` and the expiry notice flag. */
+export function signInHref(currentPath: string): string {
+  if (currentPath === "/" || currentPath === "") return "/signin";
+  return `/signin?next=${encodeURIComponent(currentPath)}&expired=1`;
+}
+
+/** After an unexpected 403 and an /api/me refetch: did who the user is change (so the guards should redirect)? */
+export function identityChanged(
+  before: { role: Role; mustChangePassword: boolean } | undefined,
+  after: { role: Role; mustChangePassword: boolean },
+): boolean {
+  return !before || before.role !== after.role || before.mustChangePassword !== after.mustChangePassword;
+}
+
 export type NavItem = { label: string; href: string };
 
 const NAV: Record<Role, NavItem[]> = {

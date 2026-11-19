@@ -49,3 +49,10 @@ _Last updated: 2026-11-18_
 - The temporary `/debug/me` page is gone; the clean-browser CSRF e2e now signs in through `/signin`.
 - Session code: pure rules in `src/lib/session/model.ts` (role home, prefix guard, nav), React in `session.tsx` (`useMe`, `useSignIn`, `useSignOut`, `RoleGuard`). Query keys live in `src/lib/query/keys.ts`. Role layouts wrap `PortalShell`.
 - The 429 sign-in test mocks the response, because a real 429 would lock the shared demo accounts/IP for the other specs.
+
+## Session expiry and error routing (ticket 04)
+
+- App-level 401/403 reactions live in `src/lib/session/events.tsx` (plugged into the API client hooks); the pure rule `identityChanged` is in `model.ts`.
+- Signing out sets a short-lived flag so the cache-clear refetch 401s are not reported as an expiry. Back after sign-out lands on `/signin?next=...&expired=1` (the guard's normal 401 path); the ticket 03 e2e was relaxed to accept the query.
+- Error copy never shows backend `detail` (problem bodies have none); 5xx/network show a retry panel with `X-Request-Id` when present.
+- Playwright `expect` timeout raised to 15s: first-hit dev compiles on this machine exceed 5s.
