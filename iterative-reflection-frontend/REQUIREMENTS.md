@@ -1,8 +1,8 @@
 # Iterative Reflection Frontend: Requirements
 
-_Last updated: 2026-11-18 (gap review)_
+_Last updated: 2026-11-18 (after the build: rows updated where the real backend differed)_
 
-> Codebase status: fresh `create-next-app` scaffold (Next.js 16, React 19, TypeScript, React Compiler). No pages are built yet, so every requirement below is `⬜ new` and the status column is left out. Decisions from the gap review are logged in `DECISIONS.md`. The backend in `../mvp` is **frozen**: this frontend must work with its 31 existing endpoints as they are. IDs like [B-R4.7] point to `../mvp/REQUIREMENTS.md`.
+> Codebase status: every in-scope requirement is built on `spec/frontend` (tickets 01–25). The compose rehearsal (R12.3–R12.5) is written but hasn't been run yet (it needs docker + mkcert). Decisions from the gap review are logged in `DECISIONS.md`. The backend in `../mvp` is **frozen**: this frontend must work with its 31 existing endpoints as they are. IDs like [B-R4.7] point to `../mvp/REQUIREMENTS.md`.
 
 ## Summary
 
@@ -56,7 +56,7 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | R1.3 | Sign-in throttling is surfaced | A 429 shows "Too many attempts. Try again in 15 minutes." and the submit button stays enabled |
 | R1.4 | Sign up with email, password, display name, birthdate, terms checkbox and an optional counselor code | A valid submit gets 201 from `POST /api/auth/signup`, then the app **automatically signs in** with the same credentials (signup doesn't start a session) and lands on `/student/feed` |
 | R1.5 | Signup validation mirrors the backend and shows its per-field errors inline | The password field shows a "12+ characters" hint. An 11-char password is blocked client-side. Every `errors[]` field in a 400 problem+json response shows under its own input |
-| R1.6 | Signup error cases have clear copy | Under 13 (400 on birthdate): "You must be 13 or older to use this app." Existing email (409): "An account with this email already exists." Unknown counselor code (404): error shown on the code field, the rest of the form keeps its values, and no account is created |
+| R1.6 | Signup error cases have clear copy | Under 13 (a 400 with only `detail`, no `errors[]`; it is also checked client-side): "You must be 13 or older to use this app." under birthdate. Existing email (409): "An account with this email already exists." Unknown counselor code (404): error shown on the code field, the rest of the form keeps its values, and no account is created |
 | R1.7 | Terms consent | The checkbox links to `/terms`, which shows the current `NEXT_PUBLIC_TERMS_VERSION`. Until real terms are written, the page holds placeholder text clearly marked "Draft — not legal text". Submit stays disabled until the box is ticked. The payload sends `acceptedTermsVersion = NEXT_PUBLIC_TERMS_VERSION` |
 | R1.8 | A signed-in user visiting `/signin` is redirected | With a valid session, `/signin` redirects to the role's home |
 
@@ -66,7 +66,7 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 |----|-------------|----------------------|
 | R2.1 | Root and role homes | `/` redirects based on `GET /api/me`: 401 → `/signin`, STUDENT → `/student/feed`, COUNSELOR → `/counselor/students`, ADMIN → `/admin/metrics` |
 | R2.2 | Role guards per prefix | Guards run client-side in each role layout from the `/api/me` query (no Next middleware). A student opening `/admin/counselors` or `/counselor/students` is redirected to `/student/feed`, and likewise for every role/prefix pair. Only a skeleton renders until the role is confirmed, so no protected page content flashes before the redirect |
-| R2.3 | Expired session or 401 mid-use | Any 401 from the API (except on `/signin`) redirects to `/signin?next=<current path>` with the notice "Your session expired. Please sign in again." After sign-in the user returns to `next`, but only if it's a same-site path under their own role prefix |
+| R2.3 | Expired session or 401 mid-use | Any 401 from the API (except on `/signin`) redirects to `/signin?next=<current path>` with the notice "Your session expired. Please sign in again." After sign-in the user returns to `next`, but only if it's a same-site path under their own role prefix. `mustChangePassword` (R2.4) takes priority over `next` |
 | R2.4 | Forced password change | While `/api/me` has `mustChangePassword: true`, every route except `/change-password` and sign-out redirects to `/change-password`. A successful `PUT /api/me/password` sends the user to their role's home |
 | R2.5 | Sign out | The user menu's "Sign out" calls `POST /api/auth/signout`, clears the query cache and goes to `/signin`. The browser Back button doesn't show cached protected data |
 | R2.6 | Unknown routes | Any unmatched path renders a 404 page with a link to the user's home |
@@ -77,7 +77,7 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | ID | Requirement | Acceptance criterion |
 |----|-------------|----------------------|
 | R3.1 | Shows exactly one career card from `GET /api/feed/next` | The card shows the title, summary, tags (as chips) and "~N min". No other careers are listed or browsable |
-| R3.2 | Start / Continue | The feed card has `lastPage` but not `lastViewedPage`, so the feed also fetches `GET /api/careers/{id}/experience` in parallel (it has no side effects). The button reads "Start" while that loads or when there's no progress yet, and "Continue (page n of m)" otherwise. It opens `/student/careers/[id]` |
+| R3.2 | Start / Continue | The feed card carries both `lastPage` and `lastViewedPage`, so the label comes from the card alone, with no extra fetch. The button reads "Start" when there's no progress yet, and "Continue (page n of m)" otherwise. Viewing a page refreshes the feed, so the label is never stale. It opens `/student/careers/[id]` |
 | R3.3 | The card is stable | Refreshing or signing out and back in shows the same card until it's reflected on or abandoned (backend [B-R4.1]) |
 | R3.4 | Exhausted state | `{career: null, exhausted: true}` shows "You've explored every career." with a link to My Journey, not an error |
 | R3.5 | Intake prompt modal | When `/api/me` returns `intakePromptDue: true` on the feed, a modal offers "Fill it in" (→ `/student/intake`) and "Not now" (`POST /api/intake/dismiss`). After either choice the modal doesn't come back on reload |
@@ -101,8 +101,8 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | R5.2 | Client and server validation | Submit is disabled until every scale and the verdict are set. Any 400 per-field errors show next to the matching question |
 | R5.3 | Submit a new reflection | `POST /api/careers/{id}/reflection` succeeds, then `/api/me` is refetched and the student goes to `/student/feed` (where R3.5 can show the intake modal) |
 | R5.4 | Edit an existing reflection | There's no single-reflection GET. When the career's entry exists in `GET /api/students/me/reflections`, the form is prefilled from its `answers` and `verdict` and saves with `PUT`. Success returns to My Journey |
-| R5.5 | No double submit | The submit button is disabled while the request is pending. A double-click sends exactly one request |
-| R5.6 | Stale or locked states | A 409 because the last page wasn't viewed sends the student back to the experience. A 409 from a concurrent `PUT` (the backend's optimistic lock; requests carry no version, so stale tabs can't be detected) shows "Someone saved this reflection at the same time. Reload and try again." and refetches the reflection |
+| R5.5 | No double submit | The submit button is disabled while the request is pending, and a client-side lock blocks a second send. A double-click sends exactly one request. (The backend can't catch duplicates: a repeated POST returns its in-progress 409, not "already reflected") |
+| R5.6 | Stale or locked states | A 409 because the last page wasn't viewed sends the student back to the experience. Any other 409 on submit shows "not open for reflection" with a link to the feed. A 409 from a concurrent `PUT` (the backend's optimistic lock; requests carry no version, so stale tabs can't be detected) shows "Someone saved this reflection at the same time. Reload and try again." and refetches the reflection |
 
 ### R6: My Journey (`/student/journey`): Saved Careers + Progress
 
@@ -162,8 +162,8 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | ID | Requirement | Acceptance criterion |
 |----|-------------|----------------------|
 | R11.1 | Portal layout | Each role prefix has a left sidebar with its nav items (see Page map), the active item highlighted, and a user menu (display name, Settings, Sign out) |
-| R11.2 | Same-origin API | In dev, `next.config.ts` rewrites `/api/*` to `BACKEND_URL` (default `http://localhost:8080`). In compose/prod, nginx sends `/api/*` straight to Spring and everything else to Next, so the rewrite isn't used (Next fixes rewrite destinations at build time, and an extra hop would hide the client IP from the login limiter). Either way the browser only ever sees one origin |
-| R11.3 | One typed fetch client | Every request goes through `src/lib/api`, which sends `credentials: 'include'`, copies the `XSRF-TOKEN` cookie into the `X-XSRF-TOKEN` header on POST/PUT/PATCH/DELETE, and parses problem+json into `{status, detail, fieldErrors}`. Before the first mutation it makes sure `GET /api/me` has run, so the `XSRF-TOKEN` cookie exists, and a CSRF 403 refetches the token and retries once |
+| R11.2 | Same-origin API | In dev, `next.config.ts` rewrites `/api/*` to `BACKEND_URL` (default `http://localhost:8080`). In compose/prod, nginx sends `/api/*` straight to Spring and everything else to Next, so the rewrite isn't used (Next fixes rewrite destinations at build time, and an extra hop would hide the client IP from the login limiter). Either way the browser only ever sees one origin. The backend's CORS check only accepts `Origin: http://localhost:5173` in dev (`app.frontend-origin`), so `pnpm dev` runs on port 5173. In prod, nginx forwards `Host`, `X-Forwarded-Proto` and `X-Forwarded-For`, and the backend gets `APP_FRONTEND_ORIGIN=https://localhost` |
+| R11.3 | One typed fetch client | Every request goes through `src/lib/api`, which sends `credentials: 'include'`, copies the `XSRF-TOKEN` cookie into the `X-XSRF-TOKEN` header on POST/PUT/PATCH/DELETE, and parses problem+json into `{status, detail, fieldErrors, requestId}`. Sign-in, sign-out and password change clear the `XSRF-TOKEN` cookie instead of rotating it, so before any mutation where the cookie is missing, the client runs `GET /api/me` to get it back. A CSRF 403 looks the same as a role denial, so after a 403 the client refetches the token and retries once, but only if the token changed |
 | R11.4 | Generated API types | `pnpm gen:api` runs openapi-typescript against the **dev** backend's `/v3/api-docs` (OpenAPI is off in prod) and writes `src/lib/api/schema.d.ts`, which is committed. `pnpm typecheck` fails if a call doesn't match the schema |
 | R11.5 | Server state through TanStack Query | Lists use one reusable paginated-table component (page/size and page metadata). Mutations invalidate the queries they affect, so no manual reload is needed after any action |
 | R11.6 | Loading and error states | Every data page shows a skeleton while loading. An unexpected error (5xx or network) shows a retry panel with the `X-Request-Id` value from the response for support |
@@ -207,7 +207,7 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 
 | ID | Requirement | Acceptance criterion |
 |----|-------------|----------------------|
-| N1.1 | Fast first load | Lighthouse desktop performance ≥90 on `/signin` and `/student/feed` (production build, `next start`) |
+| N1.1 | Fast first load | Lighthouse desktop performance ≥90 on `/signin` and `/student/feed` (production `standalone` build) |
 | N1.2 | Fast in-app navigation | Client-side navigation between portal pages renders the new page (skeleton or content) in <500 ms against the local dev backend |
 
 ### N2: Security & privacy
@@ -219,7 +219,7 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | N2.3 | Guards are UX, not security | The backend enforces every permission. The frontend never hides data it received; it just doesn't request what the role can't see |
 | N2.4 | Safe embeds and links | Embed iframes use `sandbox` with only the permissions players need (`allow-scripts allow-same-origin allow-presentation`). External links use `rel="noopener noreferrer"`. A CSP set in `next.config.ts` `headers()` (same in dev and prod) contains `frame-src` limited to the 8 hosts in the backend's `career.embed-hosts`, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'` and `frame-ancestors 'none'`. It has no `script-src`, because per-request nonces would make every page dynamic; N2.6 covers scripts |
 | N2.5 | Open-redirect safe `next` | `/signin?next=https://evil.com` and `next=//evil.com` both land on the role's home |
-| N2.6 | No third-party scripts | The production build loads no scripts or fonts from third-party origins (fonts are self-hosted with `next/font`) |
+| N2.6 | No third-party scripts | The production build loads no scripts or fonts from third-party origins (fonts are self-hosted from the bundled `geist` package; the metrics chart is plain CSS, with no chart library) |
 
 ### N3: Accessibility
 
@@ -234,14 +234,14 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | ID | Requirement | Acceptance criterion |
 |----|-------------|----------------------|
 | N4.1 | Browsers | Last 2 versions of Chrome, Edge, Firefox and Safari. Playwright runs on Chromium, Firefox and WebKit (WebKit needs HTTPS for the prod `Secure` cookie, see R12.4) |
-| N4.2 | Screen sizes | Designed for ≥1280 px. At 1024 px and 768 px wide, no horizontal page scroll and every action still works (the sidebar collapses to an icon rail or a menu) |
+| N4.2 | Screen sizes | Designed for ≥1280 px. At 1024 px and 768 px wide, no horizontal page scroll and every action still works (below 1280 px the sidebar collapses into a top bar with a "Menu" button) |
 
 ### N5: Usability
 
 | ID | Requirement | Acceptance criterion |
 |----|-------------|----------------------|
 | N5.1 | A student finishes the core loop unaided | From a fresh signup, the student reaches a submitted reflection with at most these clicks on top of reading pages: Start → Next × pages → Reflect → Submit |
-| N5.2 | Consistent error copy | Every backend status a page can receive (400/401/403/404/409/429/5xx) has written copy (R1–R10). A raw JSON or stack text never shows |
+| N5.2 | Consistent error copy | Every backend status a page can receive (400/401/403/404/409/429/5xx) has written copy (R1–R10). A raw JSON or stack text never shows, and neither does the backend's free-text `detail`. The one exception is per-field `errors[]` messages, which show under their inputs as R1.5 requires |
 
 ### N6: Maintainability
 
