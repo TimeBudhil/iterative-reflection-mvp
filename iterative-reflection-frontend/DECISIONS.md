@@ -115,6 +115,13 @@ _Last updated: 2026-11-18_
 - Error copy never shows backend `detail` (problem bodies have none); 5xx/network show a retry panel with `X-Request-Id` when present.
 - Playwright `expect` timeout raised to 15s: first-hit dev compiles on this machine exceed 5s.
 
+## My Journey (ticket 13)
+
+- The shared `useReflectedCareers` query now walks every page at `size=100` (stops at `page.totalPages`) and returns `{ content }`. My Journey, review mode and the reflect page all use it; there is no second reflections query.
+- Pure model in `src/lib/journey/model.ts`; `reflectionFor(careerId)` is for ticket 14. Averages are per answer `key` in first-seen order, shown to one decimal.
+- "Edit reflection" links to `/student/careers/[id]/reflect` (ticket 14 owns prefill and PUT there).
+- The >100 reflections pagination loop is not covered by e2e (would need 101 reflections).
+
 ## Admin audit log (ticket 21)
 
 - `useAuditLog(page, studentId?)` (`src/lib/admin/audit.ts`) uses the flat `page=N&size=20[&studentId=N]` `querySerializer` (the generated Pageable object param is ignored by Spring). Key: `queryKeys.adminAudit`.
