@@ -70,7 +70,7 @@ test("password change: mismatch blocked, wrong current on that field, success to
   await page.getByLabel("New password", { exact: true }).fill(NEW_PASSWORD);
   await page.getByLabel("Confirm new password").fill("something-else-entirely");
   await page.getByRole("button", { name: "Change password" }).click();
-  await expect(page.getByText("Passwords do not match.")).toBeVisible();
+  await expect(page.getByText("Passwords don't match.")).toBeVisible();
   expect(puts).toBe(0);
 
   await page.getByLabel("Confirm new password").fill(NEW_PASSWORD);

@@ -34,24 +34,6 @@ export function guardDecision(role: Role, pathname: string, mustChangePassword =
     : { allow: false, redirectTo: HOME[role] };
 }
 
-export const MIN_PASSWORD_LENGTH = 12;
-
-export type PasswordFormValues = { currentPassword: string; newPassword: string; confirm: string };
-export type PasswordFormErrors = Partial<Record<keyof PasswordFormValues, string>>;
-
-/** Client-side checks for the change-password form (the backend re-validates). Empty object = valid. */
-export function validatePasswordChange(v: PasswordFormValues): PasswordFormErrors {
-  const errors: PasswordFormErrors = {};
-  if (!v.currentPassword) errors.currentPassword = "Enter your current password.";
-  if (v.newPassword.length < MIN_PASSWORD_LENGTH) {
-    errors.newPassword = `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
-  } else if (new TextEncoder().encode(v.newPassword).length > 72) {
-    errors.newPassword = "Use at most 72 bytes.";
-  }
-  if (v.confirm !== v.newPassword) errors.confirm = "Passwords don't match.";
-  return errors;
-}
-
 /**
  * Where to go after sign-in. `next` is kept only if it's a plain same-site path under the role's own prefix;
  * anything else (other roles, absolute/protocol-relative URLs, backslashes, `..`, `//`) returns the role home.

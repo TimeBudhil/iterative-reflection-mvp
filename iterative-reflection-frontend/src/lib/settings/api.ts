@@ -13,12 +13,3 @@ export function useUpdateDisplayName() {
     onSuccess: (me) => qc.setQueryData(queryKeys.me, me),
   });
 }
-
-/** `PUT /api/me/password`: 204; the caller stays signed in (the backend rotates the session id). */
-export function useChangePassword() {
-  return useMutation({
-    mutationFn: async (body: { currentPassword: string; newPassword: string }) => {
-      await api.PUT("/api/me/password", { body });
-    },
-  });
-}

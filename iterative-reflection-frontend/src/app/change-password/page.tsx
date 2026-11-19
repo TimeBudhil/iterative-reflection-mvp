@@ -7,24 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { statusCopy } from "@/lib/api/error-copy";
-import { roleHome, validatePasswordChange, type PasswordFormErrors } from "@/lib/session/model";
+import { roleHome } from "@/lib/session/model";
+import { mapPasswordChangeError, validatePasswordChange, type PasswordFormErrors } from "@/lib/validation/rules";
 import { isUnauthorized, useChangePassword, useMe, useSignOut } from "@/lib/session/session";
-
-type ApiLikeError = { status?: number; fieldErrors?: Record<string, string> };
-
-/** Maps a failed PUT onto the form: field errors by name; a field-less 400 is the wrong current password. */
-function serverErrors(error: unknown): { fields: PasswordFormErrors; general: string | null } {
-  const e = error as ApiLikeError;
-  if (e?.status === 400) {
-    const fields: PasswordFormErrors = {};
-    if (e.fieldErrors?.newPassword) fields.newPassword = e.fieldErrors.newPassword;
-    if (e.fieldErrors?.currentPassword) fields.currentPassword = e.fieldErrors.currentPassword;
-    if (Object.keys(fields).length === 0) fields.currentPassword = "Current password is incorrect.";
-    return { fields, general: null };
-  }
-  return { fields: {}, general: statusCopy(typeof e?.status === "number" ? e.status : 0) };
-}
 
 function Field({
   id,
@@ -98,7 +83,7 @@ export default function ChangePasswordPage() {
                   {
                     onSuccess: (fresh) => router.replace(roleHome(fresh.role)),
                     onError: (err) => {
-                      const next = serverErrors(err);
+                      const next = mapPasswordChangeError(err);
                       setErrors(next.fields);
                       setGeneral(next.general);
                     },
