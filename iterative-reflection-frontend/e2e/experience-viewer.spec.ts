@@ -132,3 +132,14 @@ test("a reflected career opens in review mode: free navigation, no reflect butto
   await expect(page.getByRole("link", { name: "Reflect on this career" })).toHaveCount(0);
   expect(viewedCalls).toBe(0);
 });
+
+test("after viewing page 2, going back to the feed shows Continue (page 2 of m) at once", async ({ page }) => {
+  await freshStudent(page); // leaves the feed loaded (and cached) with "Start"
+  await page.getByRole("link", { name: "Start", exact: true }).click();
+  await expect(page.getByTestId("page-indicator")).toHaveText(/^Page 1 of (\d+)$/, { timeout: 30_000 });
+  const last = Number((await page.getByTestId("page-indicator").textContent())!.match(/of (\d+)/)![1]);
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByTestId("page-indicator")).toHaveText(`Page 2 of ${last}`);
+  await page.getByRole("link", { name: "Feed", exact: true }).first().click();
+  await expect(page.getByRole("link", { name: `Continue (page 2 of ${last})` })).toBeVisible();
+});

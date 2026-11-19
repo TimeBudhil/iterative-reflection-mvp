@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 import { queryKeys } from "@/lib/query/keys";
@@ -36,8 +36,14 @@ export function useReflectedCareers() {
 }
 
 export function useMarkViewed(careerId: number) {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async (n: number) =>
       (await api.POST("/api/careers/{id}/pages/{n}/viewed", { params: { path: { id: careerId, n } } })).data,
+    // The feed card's "Continue (page n of m)" and the resume page both read lastViewedPage.
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.feed });
+      void qc.invalidateQueries({ queryKey: queryKeys.experience(careerId) });
+    },
   });
 }
