@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { signIn as signInTo, signUpStudent } from "./support/helpers";
 
 // Needs the dev backend. Each test signs up a fresh student; the real join code comes from the demo counselor.
 const PASSWORD = "initial-password-123";
@@ -8,23 +9,10 @@ async function xsrf(page: Page) {
   return (await page.context().cookies()).find((c) => c.name === "XSRF-TOKEN")?.value ?? "";
 }
 
-async function signIn(page: Page, email: string, password: string) {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page).not.toHaveURL(/\/signin/, { timeout: 30_000 });
-}
+const signIn = (page: Page, email: string, password: string) => signInTo(page, email, password, "away");
 
-async function signUpFreshStudent(page: Page) {
-  const email = `links-${Date.now()}-${Math.floor(Math.random() * 1e6)}@test.example`;
-  const res = await page.request.post("/api/auth/signup", {
-    headers: { "X-XSRF-TOKEN": await xsrf(page) },
-    data: { email, password: PASSWORD, displayName: "Link Student", birthdate: "2008-01-01", acceptedTermsVersion: "1" },
-  });
-  expect(res.status()).toBe(201);
-  return email;
-}
+const signUpFreshStudent = (page: Page) =>
+  signUpStudent(page, { prefix: "links", displayName: "Link Student", password: PASSWORD, birthdate: "2008-01-01", termsVersion: "1" });
 
 /** Signs in as the demo counselor in an isolated context and reads the join code and name. */
 async function demoCounselor(browser: import("@playwright/test").Browser, baseURL: string) {

@@ -1,14 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seedLinkedStudent, type SeededStudent } from "./support/seed-student";
+import { signIn as signInTo } from "./support/helpers";
 
 // Needs the dev backend. Students are seeded through the real API (fresh each run).
-async function signIn(page: Page, s: SeededStudent) {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(s.email);
-  await page.getByLabel("Password").fill(s.password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page).toHaveURL(/\/student\/feed$/);
-}
+const signIn = (page: Page, s: SeededStudent) => signInTo(page, s.email, s.password, /\/student\/feed$/);
 
 type Reflection = { id: number; careerId: number; careerTitle: string; verdict: string; updatedAt: string; answers: { key: string; score: number }[] };
 

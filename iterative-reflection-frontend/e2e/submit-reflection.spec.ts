@@ -1,27 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
+import { freshStudent as freshStudentFor, xsrf } from "./support/helpers";
 
 // Needs the dev backend. Each test signs up a fresh student through the API.
-const PASSWORD = "correct-horse-battery";
-
-async function xsrf(page: Page) {
-  return (await page.context().cookies()).find((c) => c.name === "XSRF-TOKEN")!.value;
-}
-
-async function freshStudent(page: Page) {
-  const email = `reflect-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@e2e.example`;
-  await page.request.get("/api/me");
-  const res = await page.request.post("/api/auth/signup", {
-    headers: { "X-XSRF-TOKEN": await xsrf(page) },
-    data: { email, password: PASSWORD, displayName: "Reflect Tester", birthdate: "2000-01-01", acceptedTermsVersion: "2026-11-18" },
-  });
-  expect(res.status()).toBe(201);
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page).toHaveURL(/\/student\/feed$/);
-  return Number((await page.getByRole("link", { name: "Start", exact: true }).getAttribute("href"))!.split("/").pop());
-}
+const freshStudent = (page: Page) => freshStudentFor(page, "reflect", "Reflect Tester");
 
 /** Marks every page viewed through the API so the career can be reflected on. */
 async function viewAll(page: Page, id: number) {

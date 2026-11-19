@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { apiContext, counselorContext, seedLinkedStudent, send } from "./support/seed-student";
+import { signIn } from "./support/helpers";
 
 // Needs the dev backend (demo accounts, password "demo"). Real audit rows come from the demo counselor
 // opening a linked student's detail (ALLOWED) and an unlinked student's (DENIED).
@@ -27,11 +28,7 @@ test.beforeAll(async () => {
 });
 
 async function signInAdmin(page: Page) {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill("admin@demo.example");
-  await page.getByLabel("Password").fill("demo");
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page).toHaveURL(/\/admin\/metrics$/);
+  await signIn(page, "admin@demo.example", "demo", /\/admin\/metrics$/);
   await page.goto("/admin/audit");
 }
 
@@ -73,7 +70,7 @@ test("a student with no audit entries shows the empty state; bad input is reject
   await page.getByLabel("Student ID").fill("abc");
   await page.getByRole("button", { name: "Filter" }).click();
   await expect(page.locator("#audit-student-id-error")).toContainText("whole number");
-  await page.getByLabel("Student ID").fill("999999");
+  await page.getByLabel("Student ID").fill("987654");
   await page.getByRole("button", { name: "Filter" }).click();
-  await expect(page.getByText("No audit entries for student #999999.")).toBeVisible();
+  await expect(page.getByText("No audit entries for student #987654.")).toBeVisible();
 });

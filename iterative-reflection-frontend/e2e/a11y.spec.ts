@@ -2,16 +2,10 @@ import AxeBuilder from "@axe-core/playwright";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { apiContext, seedLinkedStudent, send } from "./support/seed-student";
+import { signIn } from "./support/helpers";
 
 // N3.1 + N4.2: axe scan (serious/critical) and horizontal-scroll check on every page of the Page map, per role.
 const WIDTHS = [1280, 1024, 768];
-
-async function signIn(page: Page, email: string, password: string) {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-}
 
 async function expectAccessible(page: Page, label: string) {
   await expect(page.locator("main, form, article").first()).toBeVisible();

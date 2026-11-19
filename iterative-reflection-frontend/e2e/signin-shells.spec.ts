@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { signIn } from "./support/helpers";
 
 // Needs the dev backend (demo accounts, password "demo").
 const ACCOUNTS = {
@@ -6,13 +7,6 @@ const ACCOUNTS = {
   counselor: { email: "counselor@demo.example", home: /\/counselor\/students$/, nav: ["Students", "Settings"] },
   admin: { email: "admin@demo.example", home: /\/admin\/metrics$/, nav: ["Metrics", "Counselors", "Audit log", "Settings"] },
 } as const;
-
-async function signIn(page: Page, email: string, password = "demo") {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-}
 
 test("a 5xx on sign-in shows the written copy and the request id", async ({ page }) => {
   await page.route("**/api/auth/signin", (route) =>

@@ -1,14 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
+import { signIn } from "./support/helpers";
 
 // Needs the dev backend (demo accounts, password "demo"). The demo counselor has 2 linked students.
 test.use({ permissions: ["clipboard-read", "clipboard-write"] });
 
 async function signInCounselor(page: Page) {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill("counselor@demo.example");
-  await page.getByLabel("Password").fill("demo");
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page).toHaveURL(/\/counselor\/students$/);
+  await signIn(page, "counselor@demo.example", "demo", /\/counselor\/students$/);
 }
 
 test("copy puts the code on the clipboard and toasts; rotate confirms and swaps the code", async ({ page }) => {
