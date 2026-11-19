@@ -119,7 +119,7 @@ _Last updated: 2026-11-18_
 
 - **New vs edit** is decided by `GET /api/intake`: the 404 (it has no `detail`) maps to `null` in `useIntake`, so a missing intake is data, not an error. `null` means POST and then the feed; otherwise PUT and then Settings.
 - **PUT replaces every answer**, so `buildRequest` always sends the whole form (blank answers dropped); clearing a field in edit mode removes that answer.
-- **409 handling:** only the "Reflect on at least 3 careers..." detail swaps the form for "The intake opens after your 3rd reflection."; the other 409 ("already submitted") shows its detail inline.
+- **409 handling:** only the "Reflect on at least 3 careers..." detail swaps the form for "The intake opens after your 3rd reflection."; the other 409 ("already submitted") shows the written `statusCopy(409)` message ("That can't be done right now."), never the backend `detail`.
 - **Prompt modal** (`IntakePromptModal` on the feed) is driven by `intakePromptDue` from `/api/me`. Both "Not now" and "Fill it in" call `POST /api/intake/dismiss` first (R3.5: it must not return after either); Esc/overlay counts as "Not now".
 - **Interests card** is a child of `<SettingsPage>` in `src/app/student/settings/page.tsx`, after "My counselors".
 
@@ -139,3 +139,12 @@ _Last updated: 2026-11-18_
 ## Ticket 14: edit reflection
 
 - `/student/careers/[id]/reflect` decides create vs edit once on mount from `reflectionFor(careerId)`, so a first submit does not flip into edit mode while navigating away. Edit PUTs and returns to My Journey; the PUT 409 "changed concurrently" shows the R5.6 copy, refetches the reflections list and remounts the form (keyed by `updatedAt`) with the latest values.
+
+## Code review fixes
+
+- **Server field messages are shown, `detail` never is (R1.5):** the per-field `fieldErrors` messages from a 400 render verbatim under their inputs (profile, password, change-password, sign-up, admin counselor form). R1.5 explicitly asks for each `errors[]` field under its input, so this is accepted. The free-text `detail` is never rendered; everything else uses `statusCopy`.
+- **Viewing a page refreshes the feed and the experience:** `useMarkViewed` invalidates `queryKeys.feed` and `queryKeys.experience(careerId)`, so "Continue (page n of m)" and the resume page are never stale.
+- **One of each:** `useChangePassword` (session, refetches `/api/me`), `validatePasswordChange` and `mapPasswordChangeError` (`src/lib/validation/rules.ts`), `mapFieldErrors`, `EMAIL_TAKEN` and the 429 copy (`src/lib/api/error-copy.ts`), `fetchMe` (`src/lib/session/session.tsx`). Password length is counted in bytes (72) everywhere; the confirm-mismatch copy is "Passwords don't match."
+- **Pages with their own 403 copy** call `useOwnForbiddenCopy()` (`src/lib/session/access.ts`) while mounted; the global 403 handler skips the no-access panel then. The session module knows no routes.
+- **Backend-text matching** lives in named, unit-tested predicates in the models: `isNotYetAvailable` (intake), `isUnviewedLastPage` (reflection), `isConcurrentEdit` (reflection), `isUnder13` (signup).
+- **E2E helpers** (`signIn`, `xsrf`/`csrfHeaders`, `signUpStudent`, `freshStudent`) live in `e2e/support/helpers.ts`. Specs use Playwright's `baseURL` and relative `/api/...` through the Next rewrite, so they run on any `NEXT_PORT`/`BACKEND_PORT`; the seeding helpers read `baseURL` from the running project.
