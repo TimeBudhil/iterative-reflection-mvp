@@ -14,12 +14,42 @@ export const rolePrefix = (role: Role): string => PREFIX[role];
 
 export type GuardDecision = { allow: true } | { allow: false; redirectTo: string };
 
-/** Whether `role` may view `pathname` (a role-prefixed route); otherwise where to send them. */
-export function guardDecision(role: Role, pathname: string): GuardDecision {
+export const CHANGE_PASSWORD_PATH = "/change-password";
+
+/** Where a freshly known user lands: the forced password change, else their role home. */
+export const landingFor = (me: { role: Role; mustChangePassword: boolean }): string =>
+  me.mustChangePassword ? CHANGE_PASSWORD_PATH : HOME[me.role];
+
+/**
+ * Whether the user may view `pathname`; otherwise where to send them. While `mustChangePassword`, only
+ * `/change-password` is allowed (sign-out is an action, not a route). Otherwise `role` must own the route prefix.
+ */
+export function guardDecision(role: Role, pathname: string, mustChangePassword = false): GuardDecision {
+  if (mustChangePassword) {
+    return pathname === CHANGE_PASSWORD_PATH ? { allow: true } : { allow: false, redirectTo: CHANGE_PASSWORD_PATH };
+  }
   const prefix = PREFIX[role];
   return pathname === prefix || pathname.startsWith(`${prefix}/`)
     ? { allow: true }
     : { allow: false, redirectTo: HOME[role] };
+}
+
+export const MIN_PASSWORD_LENGTH = 12;
+
+export type PasswordFormValues = { currentPassword: string; newPassword: string; confirm: string };
+export type PasswordFormErrors = Partial<Record<keyof PasswordFormValues, string>>;
+
+/** Client-side checks for the change-password form (the backend re-validates). Empty object = valid. */
+export function validatePasswordChange(v: PasswordFormValues): PasswordFormErrors {
+  const errors: PasswordFormErrors = {};
+  if (!v.currentPassword) errors.currentPassword = "Enter your current password.";
+  if (v.newPassword.length < MIN_PASSWORD_LENGTH) {
+    errors.newPassword = `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
+  } else if (new TextEncoder().encode(v.newPassword).length > 72) {
+    errors.newPassword = "Use at most 72 bytes.";
+  }
+  if (v.confirm !== v.newPassword) errors.confirm = "Passwords don't match.";
+  return errors;
 }
 
 export type NavItem = { label: string; href: string };

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { roleHome } from "@/lib/session/model";
+import { landingFor } from "@/lib/session/model";
 import { useMe } from "@/lib/session/session";
 import { SignInForm } from "./sign-in-form";
 import { SignUpForm } from "./sign-up-form";
@@ -18,7 +18,7 @@ export function SignInView() {
 
   // A signed-in user never sees the form (R1.8).
   useEffect(() => {
-    if (me.data) router.replace(roleHome(me.data.role));
+    if (me.data) router.replace(landingFor(me.data));
   }, [me.data, router]);
 
   const ready = !me.isPending && !me.data;
