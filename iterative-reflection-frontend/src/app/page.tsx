@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { RetryPanel } from "@/components/shared/retry-panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { landingFor } from "@/lib/session/model";
 import { isUnauthorized, useMe } from "@/lib/session/session";
@@ -18,11 +19,8 @@ export default function Root() {
 
   if (me.error && !isUnauthorized(me.error)) {
     return (
-      <div className="p-8" role="alert">
-        <p>Something went wrong.</p>
-        <button type="button" className="mt-2 underline" onClick={() => me.refetch()}>
-          Try again
-        </button>
+      <div className="p-8">
+        <RetryPanel error={me.error} onRetry={() => void me.refetch()} />
       </div>
     );
   }

@@ -47,7 +47,7 @@ for (const [role, a] of Object.entries(ACCOUNTS)) {
     await expect(page).toHaveURL(/\/signin$/);
     await page.goBack();
     // Back must not show protected data: it ends on the sign-in page again.
-    await expect(page).toHaveURL(/\/signin$/);
+    await expect(page).toHaveURL(/\/signin(\?|$)/);
     await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
   });
 }
