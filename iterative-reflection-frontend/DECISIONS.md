@@ -81,6 +81,21 @@ _Last updated: 2026-11-18_
 ## Counselor student detail (ticket 18)
 
 - **Reflection answers typed locally:** the generated schema types `reflections[].answers` as the intake `Answer`; the real wire shape is `{key, questionVersion, prompt, score, openText|null}`. `src/lib/counselor/student-detail.ts` declares it and maps the response to a view model, keeping API order.
-- **403 handled in the page:** the global `onForbidden` hook isn't wired yet, so the page shows "This student hasn't shared their progress with you." itself (the backend 403s identically for unlinked, revoked, deactivated counselor and nonexistent student).
+- **403 handled in the page:** the page shows "This student hasn't shared their progress with you." itself (the backend 403s identically for unlinked, revoked, deactivated counselor and nonexistent student). `SessionEvents` still refetches `/api/me` on that 403 (a changed role still re-runs the guards) but skips the generic no-access panel for `/counselor/students/[id]`.
 - **Affinity scores are not shown:** R9.5 asks for tag + category only.
 - **E2E seeding:** `e2e/support/seed-student.ts` builds a linked student with reflections, an abandoned career and intake through the real API (the demo students have no activity).
+
+## Experience viewer (ticket 10)
+
+- **Mode-driven viewer:** `src/lib/experience/model.ts` holds the pure rules (`ViewerMode = "in-progress" | "review"`, `modeFor`, `startPage`, `viewerState`). `viewerState` already exposes `showEditReflection` and `freeNavigation` (review), so tickets 11 and 14 add their buttons in the marked "mode actions" block of `src/components/experience/viewer.tsx` without restructuring.
+- **Mode needs both queries:** the viewer waits for the experience and the reflections list (`queryKeys.reflections`, size=100) before rendering, so it never flashes the wrong mode. Review mode starts at page 1 and makes no `viewed` calls (the in-progress guard would 409 them).
+- **Pageable on the wire:** the generated schema types `pageable` as one object, but Spring wants flat `?page=0&size=100`, so `useReflectedCareers` passes a `querySerializer`. Other tickets reading that list should reuse this hook and key.
+- **Unavailable state** covers a 404/409 from the experience GET and from `viewed`.
+- **Signup error mapping (R1.6):** the backend's under-13 400 has only `detail` (no `errors[]`) and a bad counselor code is a 404 with no field, so the form maps by status: 400+`errors[]` to fields, 400 mentioning "13" to birthdate, 404 to the code field, 409 to email. Under-13 is also checked client-side. Signup does not start a session, so the form signs in right after the 201.
+
+## Session expiry and error routing (ticket 04)
+
+- App-level 401/403 reactions live in `src/lib/session/events.tsx` (plugged into the API client hooks); the pure rule `identityChanged` is in `model.ts`.
+- Signing out sets a short-lived flag so the cache-clear refetch 401s are not reported as an expiry. Back after sign-out lands on `/signin?next=...&expired=1` (the guard's normal 401 path); the ticket 03 e2e was relaxed to accept the query.
+- Error copy never shows backend `detail` (problem bodies have none); 5xx/network show a retry panel with `X-Request-Id` when present.
+- Playwright `expect` timeout raised to 15s: first-hit dev compiles on this machine exceed 5s.

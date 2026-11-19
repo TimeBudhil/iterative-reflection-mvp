@@ -2,8 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { RetryPanel } from "@/components/shared/retry-panel";
 import { Skeleton } from "@/components/ui/skeleton";
-import { roleHome } from "@/lib/session/model";
+import { landingFor } from "@/lib/session/model";
 import { isUnauthorized, useMe } from "@/lib/session/session";
 
 /** `/`: signed out -> /signin, otherwise the role's home. */
@@ -12,17 +13,14 @@ export default function Root() {
   const router = useRouter();
 
   useEffect(() => {
-    if (me.data) router.replace(roleHome(me.data.role));
+    if (me.data) router.replace(landingFor(me.data));
     else if (isUnauthorized(me.error)) router.replace("/signin");
   }, [me.data, me.error, router]);
 
   if (me.error && !isUnauthorized(me.error)) {
     return (
-      <div className="p-8" role="alert">
-        <p>Something went wrong.</p>
-        <button type="button" className="mt-2 underline" onClick={() => me.refetch()}>
-          Try again
-        </button>
+      <div className="p-8">
+        <RetryPanel error={me.error} onRetry={() => void me.refetch()} />
       </div>
     );
   }

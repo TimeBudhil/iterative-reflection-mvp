@@ -67,6 +67,10 @@ test("a 403 shows the not-shared message", async ({ page }) => {
   await signInCounselor(page);
   await page.goto("/counselor/students/999999");
   await expect(page.getByText("This student hasn't shared their progress with you.")).toBeVisible();
+  // The global R2.7 no-access panel must not replace the page copy once /api/me has been re-checked.
+  await page.waitForTimeout(1000);
+  await expect(page.getByText("This student hasn't shared their progress with you.")).toBeVisible();
+  await expect(page.getByText("You don't have access to this.")).toHaveCount(0);
 });
 
 test("a server error shows the retry panel with the request id", async ({ page }) => {
@@ -81,5 +85,5 @@ test("a server error shows the retry panel with the request id", async ({ page }
   );
   await page.goto(`/counselor/students/${rich.id}`);
   await expect(page.getByText("Request ID: req-detail")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /try again|retry/i })).toBeVisible();
 });

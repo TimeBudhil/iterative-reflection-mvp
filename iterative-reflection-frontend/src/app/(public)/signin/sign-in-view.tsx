@@ -5,20 +5,23 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { roleHome } from "@/lib/session/model";
+import { postSignInPath } from "@/lib/session/model";
 import { useMe } from "@/lib/session/session";
 import { SignInForm } from "./sign-in-form";
+import { SignUpForm } from "./sign-up-form";
 
 export function SignInView() {
   const router = useRouter();
   const params = useSearchParams();
   const mode = params.get("mode") === "signup" ? "signup" : "signin";
+  const next = params.get("next");
+  const expired = params.get("expired") === "1";
   const me = useMe();
 
   // A signed-in user never sees the form (R1.8).
   useEffect(() => {
-    if (me.data) router.replace(roleHome(me.data.role));
-  }, [me.data, router]);
+    if (me.data) router.replace(postSignInPath(me.data, next));
+  }, [me.data, next, router]);
 
   const ready = !me.isPending && !me.data;
 
@@ -30,9 +33,21 @@ export function SignInView() {
         </CardHeader>
         <CardContent>
           {ready ? (
+            <>
+            {expired && (
+              <p role="status" className="mb-4 rounded-md bg-muted p-3 text-sm">
+                Your session expired. Please sign in again.
+              </p>
+            )}
             <Tabs
               value={mode}
-              onValueChange={(next) => router.replace(next === "signup" ? "/signin?mode=signup" : "/signin")}
+              onValueChange={(tab) => {
+                const q = new URLSearchParams(params.toString());
+                if (tab === "signup") q.set("mode", "signup");
+                else q.delete("mode");
+                const qs = q.toString();
+                router.replace(qs ? `/signin?${qs}` : "/signin");
+              }}
             >
               <TabsList className="mb-4 w-full">
                 <TabsTrigger value="signin">Sign in</TabsTrigger>
@@ -42,10 +57,10 @@ export function SignInView() {
                 <SignInForm />
               </TabsContent>
               <TabsContent value="signup">
-                {/* Sign up form arrives with ticket 06. */}
-                <p className="text-sm text-muted-foreground">Sign up is coming soon.</p>
+                <SignUpForm />
               </TabsContent>
             </Tabs>
+            </>
           ) : (
             <div aria-busy="true" aria-label="Loading" className="space-y-3">
               <Skeleton className="h-9 w-full" />
