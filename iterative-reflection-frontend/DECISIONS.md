@@ -50,6 +50,21 @@ _Last updated: 2026-11-18_
 - Session code: pure rules in `src/lib/session/model.ts` (role home, prefix guard, nav), React in `session.tsx` (`useMe`, `useSignIn`, `useSignOut`, `RoleGuard`). Query keys live in `src/lib/query/keys.ts`. Role layouts wrap `PortalShell`.
 - The 429 sign-in test mocks the response, because a real 429 would lock the shared demo accounts/IP for the other specs.
 
+## Counselor join code and students (ticket 17)
+
+- **Shared UI introduced here:** `PaginatedTable` (bound to `{content, page}`, 0-based page, skeleton, empty slot, retry panel), `ConfirmDialog`, `RetryPanel` (shows `X-Request-Id`), shadcn `dialog`/`table`/`sonner` (`Toaster` mounted in `providers.tsx`), `relativeTime`, `pageSummary`.
+- **Paged queries need a custom `querySerializer`:** the generated schema models Spring Pageable as one object param, which openapi-fetch serialises in a form the backend ignores (page 2 returned page 1). Send flat `page=N&size=20` instead.
+- **Rotate returns 200 `{joinCode}`**, and the profile query is invalidated so the new code appears.
+
+## Deploy rehearsal (ticket 05)
+
+- **Backend image built by `deploy/build-backend.sh`, not compose:** buildpacks (`spring-boot:build-image`) is a Maven goal, so compose just runs the tagged image. `BP_JVM_VERSION=25` matches the pom. `mvp/` is untouched (only the git-ignored `mvp/target/` is written).
+- **`APP_FRONTEND_ORIGIN=https://localhost` set in compose:** the prod profile leaves `app.frontend-origin` at the dev default. nginx also sends `Host $host`, `X-Forwarded-Proto` and `X-Forwarded-For $remote_addr`, otherwise the backend's CORS check 403s every mutation.
+- **`X-Forwarded-For` is `$remote_addr`, not appended:** a client cannot spoof its address to the login limiter.
+- **Dockerfile copies `public/` and `.next/static` by hand:** `output: 'standalone'` omits both. The builder stage runs `mkdir -p public` since the repo has no `public/` yet.
+- **Smoke config is separate (`playwright.smoke.config.ts`, specs in `smoke/`):** so `pnpm e2e` (dev backend, demo accounts) never picks them up. It uses `ignoreHTTPSErrors` because Playwright's Firefox/WebKit ignore the system trust store holding the mkcert CA. Credentials come from `deploy/.env`.
+- **Not run on the dev machine:** no docker/mkcert, so the compose stack and `pnpm e2e:smoke` are unverified until someone runs the README steps.
+
 ## Feed card (ticket 09)
 
 - **No parallel experience fetch (diverges from R3.2):** the real `GET /api/feed/next` card already carries `lastViewedPage` (and the generated schema has it), so "Start" / "Continue (page n of m)" is computed from the card alone (`src/lib/feed/model.ts`). One request, no loading flash of "Start". `queryKeys.experience(id)` is added for the career page ticket.
