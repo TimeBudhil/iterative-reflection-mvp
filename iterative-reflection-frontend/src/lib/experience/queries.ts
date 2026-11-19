@@ -24,7 +24,6 @@ export function useReflectedCareers() {
         const data = (
           await api.GET("/api/students/me/reflections", {
             params: { query: { pageable: { page, size: 100 } } },
-            querySerializer: () => `page=${page}&size=100`, // the schema models Spring's Pageable as one object; the wire is flat
           })
         ).data as { content?: ReflectionView[]; page?: { totalPages?: number } } | undefined;
         content.push(...(data?.content ?? []));

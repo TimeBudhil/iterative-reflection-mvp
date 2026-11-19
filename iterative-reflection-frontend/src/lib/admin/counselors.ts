@@ -18,7 +18,6 @@ export function useAdminCounselors(page: number, size: number = COUNSELORS_PAGE_
       (
         await api.GET("/api/admin/counselors", {
           params: { query: { pageable: { page, size } } },
-          querySerializer: () => `page=${page}&size=${size}`,
         })
       ).data!,
     placeholderData: keepPreviousData,

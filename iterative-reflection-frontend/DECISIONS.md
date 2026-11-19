@@ -53,12 +53,12 @@ _Last updated: 2026-11-18_
 ## Counselor join code and students (ticket 17)
 
 - **Shared UI introduced here:** `PaginatedTable` (bound to `{content, page}`, 0-based page, skeleton, empty slot, retry panel), `ConfirmDialog`, `RetryPanel` (shows `X-Request-Id`), shadcn `dialog`/`table`/`sonner` (`Toaster` mounted in `providers.tsx`), `relativeTime`, `pageSummary`.
-- **Paged queries need a custom `querySerializer`:** the generated schema models Spring Pageable as one object param, which openapi-fetch serialises in a form the backend ignores (page 2 returned page 1). Send flat `page=N&size=20` instead.
+- **Paged queries use one client-level `querySerializer`:** the generated schema models Spring Pageable as one object param, which openapi-fetch serialises in a form the backend ignores (page 2 returned page 1). `serializeQuery` in `src/lib/api/client.ts` flattens `pageable` into `page=N&size=M` for every call, so callers just pass `params.query.pageable` and never their own serializer.
 - **Rotate returns 200 `{joinCode}`**, and the profile query is invalidated so the new code appears.
 
 ## Admin counselor management (ticket 19)
 
-- **Reusable list hook:** `useAdminCounselors(page, size)` in `src/lib/admin/counselors.ts` (flat `page`/`size` `querySerializer`, as in ticket 17). Ticket 21 can call it with `size=100` and build an id-to-name map with `counselorNameMap` (`counselor-model.ts`). Mutations invalidate `queryKeys.adminCounselorsAll`.
+- **Reusable list hook:** `useAdminCounselors(page, size)` in `src/lib/admin/counselors.ts` (pageable flattened by the client-level `serializeQuery`). Ticket 21 can call it with `size=100` and build an id-to-name map with `counselorNameMap` (`counselor-model.ts`). Mutations invalidate `queryKeys.adminCounselorsAll`.
 - **Create dialog** swaps to a "Counselor created" state carrying the share-the-temporary-password notice; the list jumps to page 1 (newest first) so the new row is visible. 409 maps to the email field, 400 `errors[]` to their fields.
 - **Forced-change e2e** only asserts the new counselor lands on `/change-password`; the full flow stays in `forced-password-change.spec.ts` (its sign-out assertion was loosened to accept the `?next=...&expired=1` that ticket 04 adds).
 - **Dev gotcha:** a scratch H2 file that outlived a long pause started rejecting `users` inserts (`users_role_ck`, surfaced as a misleading 409 "email exists"); deleting the DB fixed it.
@@ -96,7 +96,7 @@ _Last updated: 2026-11-18_
 
 - **Link errors are mapped by status, not backend text:** the backend says "Unknown join code." / "Already linked to this counselor." / "Too many failed link attempts. Try again later."; the UI shows the spec wording (R8.5) from `src/lib/counselor-links/model.ts`.
 - **Codes are normalized client-side** (whitespace stripped, upper-cased) since the backend is case-insensitive.
-- **List is one request with `size=100`** and the flat `page/size` serializer (no pager in the card); link and revoke invalidate `queryKeys.counselorLinks`.
+- **List is one request with `size=100`** and the client-level pageable serializer (no pager in the card); link and revoke invalidate `queryKeys.counselorLinks`.
 - The 429 and Inactive-badge e2e cases mock the response so the real 10-failure limiter and demo data stay untouched.
 
 
@@ -104,7 +104,7 @@ _Last updated: 2026-11-18_
 
 - **Mode-driven viewer:** `src/lib/experience/model.ts` holds the pure rules (`ViewerMode = "in-progress" | "review"`, `modeFor`, `startPage`, `viewerState`). `viewerState` already exposes `showEditReflection` and `freeNavigation` (review), so tickets 11 and 14 add their buttons in the marked "mode actions" block of `src/components/experience/viewer.tsx` without restructuring.
 - **Mode needs both queries:** the viewer waits for the experience and the reflections list (`queryKeys.reflections`, size=100) before rendering, so it never flashes the wrong mode. Review mode starts at page 1 and makes no `viewed` calls (the in-progress guard would 409 them).
-- **Pageable on the wire:** the generated schema types `pageable` as one object, but Spring wants flat `?page=0&size=100`, so `useReflectedCareers` passes a `querySerializer`. Other tickets reading that list should reuse this hook and key.
+- **Pageable on the wire:** the generated schema types `pageable` as one object, but Spring wants flat `?page=0&size=100`, which the client-level `serializeQuery` (`src/lib/api/client.ts`) now handles. Other tickets reading that list should reuse this hook and key.
 - **Unavailable state** covers a 404/409 from the experience GET and from `viewed`.
 - **Signup error mapping (R1.6):** the backend's under-13 400 has only `detail` (no `errors[]`) and a bad counselor code is a 404 with no field, so the form maps by status: 400+`errors[]` to fields, 400 mentioning "13" to birthdate, 404 to the code field, 409 to email. Under-13 is also checked client-side. Signup does not start a session, so the form signs in right after the 201.
 
@@ -132,7 +132,7 @@ _Last updated: 2026-11-18_
 
 ## Admin audit log (ticket 21)
 
-- `useAuditLog(page, studentId?)` (`src/lib/admin/audit.ts`) uses the flat `page=N&size=20[&studentId=N]` `querySerializer` (the generated Pageable object param is ignored by Spring). Key: `queryKeys.adminAudit`.
+- `useAuditLog(page, studentId?)` (`src/lib/admin/audit.ts`) sends `page=N&size=20[&studentId=N]` via the client-level `serializeQuery` (the generated Pageable object param is ignored by Spring). Key: `queryKeys.adminAudit`.
 - Counselor names come from `useAdminCounselors(0, 100)` + `counselorNameMap`; ids missing from the first 100 counselors (or while the list is unavailable) render as `#id` (`counselorLabel`).
 - The student-ID filter is applied on submit (not per keystroke), validated client-side as a positive integer (leading `#` tolerated), and resets to page 1. Timestamps use the browser-local `toLocaleString()`.
 

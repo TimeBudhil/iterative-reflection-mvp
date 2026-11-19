@@ -109,6 +109,23 @@ async function toApiError(res: Response): Promise<ApiError> {
   return new ApiError({ status: res.status, detail, fieldErrors, requestId });
 }
 
+/**
+ * Query-string serializer for every call. The generated schema models Spring's `Pageable` as one object param
+ * (`query.pageable = { page, size }`), which Spring ignores; the wire format is flat `page=N&size=M`. So
+ * `pageable` is flattened and everything else is serialized as plain `key=value` (undefined/null skipped).
+ */
+export function serializeQuery(query: Record<string, unknown> | undefined): string {
+  const flat: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(query ?? {})) {
+    if (key === "pageable" && value && typeof value === "object") Object.assign(flat, value);
+    else flat[key] = value;
+  }
+  return Object.entries(flat)
+    .filter(([, v]) => v !== undefined && v !== null)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+    .join("&");
+}
+
 export function createApiClient(options: ApiClientOptions = {}) {
   const hooks: ApiHooks = { onUnauthorized: options.onUnauthorized, onForbidden: options.onForbidden };
   const baseUrl = options.baseUrl ?? (typeof window !== "undefined" ? window.location.origin : "");
@@ -163,6 +180,7 @@ export function createApiClient(options: ApiClientOptions = {}) {
 
   const client = createClient<paths & ManualPaths>({
     baseUrl,
+    querySerializer: serializeQuery,
     // openapi-fetch hands us a fully built Request.
     fetch: (input) => send(input as Request),
   });

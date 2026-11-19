@@ -5,14 +5,12 @@ import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
 
 const SIZE = 100;
-// The generated schema models Spring's Pageable as one object param; the wire format is flat page/size.
-const querySerializer = () => `page=0&size=${SIZE}`;
 
 export function useCounselorLinks() {
   return useQuery({
     queryKey: queryKeys.counselorLinks,
     queryFn: async () =>
-      (await api.GET("/api/students/me/counselors", { params: { query: { pageable: { page: 0, size: SIZE } } }, querySerializer })).data!
+      (await api.GET("/api/students/me/counselors", { params: { query: { pageable: { page: 0, size: SIZE } } } })).data!
         .content,
   });
 }

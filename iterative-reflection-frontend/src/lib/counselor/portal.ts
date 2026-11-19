@@ -39,8 +39,6 @@ export function useCounselorStudents(page: number) {
       (
         await api.GET("/api/counselor/students", {
           params: { query: { pageable: { page, size: STUDENTS_PAGE_SIZE } } },
-          // The generated schema models Spring's Pageable as one object param; the wire format is flat page/size.
-          querySerializer: () => `page=${page}&size=${STUDENTS_PAGE_SIZE}`,
         })
       ).data!,
     placeholderData: keepPreviousData,
