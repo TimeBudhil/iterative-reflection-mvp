@@ -9,7 +9,10 @@ import { isSigningOut, setAccessDenied } from "./access";
 import { identityChanged, signInHref } from "./model";
 import type { Me } from "./session";
 
-const currentPath = () => window.location.pathname + window.location.search;
+/** Pages whose 403 has its own copy (R9.5: counselor student detail), so the generic no-access panel stays out. */
+const HAS_OWN_403_COPY = /^\/counselor\/students\/[^/]+$/;
+
+const currentPath =() => window.location.pathname + window.location.search;
 
 /**
  * Plugs the app-level reactions into the API client's hooks (once, at startup):
@@ -38,7 +41,7 @@ export function SessionEvents() {
             queryFn: async () => (await api.GET("/api/me")).data as Me,
           })
           .then((after) => {
-            if (!identityChanged(before, after)) setAccessDenied(path);
+            if (!identityChanged(before, after) && !HAS_OWN_403_COPY.test(path)) setAccessDenied(path);
           })
           .catch(() => {
             // A 401 here is handled by onUnauthorized; any other failure leaves the page as is.

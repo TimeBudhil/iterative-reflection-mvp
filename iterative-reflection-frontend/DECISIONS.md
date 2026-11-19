@@ -78,6 +78,13 @@ _Last updated: 2026-11-18_
 - **No parallel experience fetch (diverges from R3.2):** the real `GET /api/feed/next` card already carries `lastViewedPage` (and the generated schema has it), so "Start" / "Continue (page n of m)" is computed from the card alone (`src/lib/feed/model.ts`). One request, no loading flash of "Start". `queryKeys.experience(id)` is added for the career page ticket.
 - **"n" is `lastViewedPage`:** Continue shows how many pages are already viewed, out of `lastPage`.
 
+## Counselor student detail (ticket 18)
+
+- **Reflection answers typed locally:** the generated schema types `reflections[].answers` as the intake `Answer`; the real wire shape is `{key, questionVersion, prompt, score, openText|null}`. `src/lib/counselor/student-detail.ts` declares it and maps the response to a view model, keeping API order.
+- **403 handled in the page:** the page shows "This student hasn't shared their progress with you." itself (the backend 403s identically for unlinked, revoked, deactivated counselor and nonexistent student). `SessionEvents` still refetches `/api/me` on that 403 (a changed role still re-runs the guards) but skips the generic no-access panel for `/counselor/students/[id]`.
+- **Affinity scores are not shown:** R9.5 asks for tag + category only.
+- **E2E seeding:** `e2e/support/seed-student.ts` builds a linked student with reflections, an abandoned career and intake through the real API (the demo students have no activity).
+
 ## Student counselor links (ticket 16)
 
 - **Link errors are mapped by status, not backend text:** the backend says "Unknown join code." / "Already linked to this counselor." / "Too many failed link attempts. Try again later."; the UI shows the spec wording (R8.5) from `src/lib/counselor-links/model.ts`.
