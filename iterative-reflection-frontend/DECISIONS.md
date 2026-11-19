@@ -121,3 +121,8 @@ _Last updated: 2026-11-18_
 - Pure model in `src/lib/journey/model.ts`; `reflectionFor(careerId)` is for ticket 14. Averages are per answer `key` in first-seen order, shown to one decimal.
 - "Edit reflection" links to `/student/careers/[id]/reflect` (ticket 14 owns prefill and PUT there).
 - The >100 reflections pagination loop is not covered by e2e (would need 101 reflections).
+## Admin audit log (ticket 21)
+
+- `useAuditLog(page, studentId?)` (`src/lib/admin/audit.ts`) uses the flat `page=N&size=20[&studentId=N]` `querySerializer` (the generated Pageable object param is ignored by Spring). Key: `queryKeys.adminAudit`.
+- Counselor names come from `useAdminCounselors(0, 100)` + `counselorNameMap`; ids missing from the first 100 counselors (or while the list is unavailable) render as `#id` (`counselorLabel`).
+- The student-ID filter is applied on submit (not per keystroke), validated client-side as a positive integer (leading `#` tolerated), and resets to page 1. Timestamps use the browser-local `toLocaleString()`.
