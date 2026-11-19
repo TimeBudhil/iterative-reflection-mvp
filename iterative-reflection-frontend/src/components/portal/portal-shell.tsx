@@ -15,7 +15,8 @@ import {
 import { NoAccessPanel } from "@/components/feedback/no-access-panel";
 import { useAccessDenied } from "@/lib/session/access";
 import { navFor, roleHome, settingsHref, type Role } from "@/lib/session/model";
-import { RoleGuard, useSignOut, type Me } from "@/lib/session/session";
+import { RoleGuard } from "@/components/session/role-guard";
+import { useSignOut, type Me } from "@/lib/session/session";
 
 function PortalSkeleton() {
   return (
