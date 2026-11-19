@@ -5,6 +5,7 @@ export const queryKeys = {
   adminCounselorsAll: ["admin", "counselors"] as const,
   adminCounselors: (page: number, size: number) => ["admin", "counselors", page, size] as const,
   reflections: ["reflections"] as const,
+  reflectionQuestions: ["reflection-questions"] as const,
   counselorMe: ["counselor", "me"] as const,
   counselorStudents: (page: number) => ["counselor", "students", page] as const,
   counselorStudent: (id: number | string) => ["counselor", "student", String(id)] as const,
