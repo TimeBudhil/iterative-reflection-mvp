@@ -1,5 +1,10 @@
-import { PlaceholderPage } from "@/components/portal/placeholder-page";
+import { Suspense } from "react";
+import { MetricsView } from "./metrics-view";
 
 export default function Page() {
-  return <PlaceholderPage title="Metrics" />;
+  return (
+    <Suspense>
+      <MetricsView />
+    </Suspense>
+  );
 }
