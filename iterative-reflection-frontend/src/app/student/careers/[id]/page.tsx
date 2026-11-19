@@ -1,5 +1,9 @@
-import { PlaceholderPage } from "@/components/portal/placeholder-page";
+"use client";
 
-export default function Page() {
-  return <PlaceholderPage title="Career" />;
+import { use } from "react";
+import { ExperienceViewer } from "@/components/experience/viewer";
+
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  return <ExperienceViewer careerId={Number(id)} />;
 }

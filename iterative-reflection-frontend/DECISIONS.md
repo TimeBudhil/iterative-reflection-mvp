@@ -54,3 +54,10 @@ _Last updated: 2026-11-18_
 
 - **No parallel experience fetch (diverges from R3.2):** the real `GET /api/feed/next` card already carries `lastViewedPage` (and the generated schema has it), so "Start" / "Continue (page n of m)" is computed from the card alone (`src/lib/feed/model.ts`). One request, no loading flash of "Start". `queryKeys.experience(id)` is added for the career page ticket.
 - **"n" is `lastViewedPage`:** Continue shows how many pages are already viewed, out of `lastPage`.
+
+## Experience viewer (ticket 10)
+
+- **Mode-driven viewer:** `src/lib/experience/model.ts` holds the pure rules (`ViewerMode = "in-progress" | "review"`, `modeFor`, `startPage`, `viewerState`). `viewerState` already exposes `showEditReflection` and `freeNavigation` (review), so tickets 11 and 14 add their buttons in the marked "mode actions" block of `src/components/experience/viewer.tsx` without restructuring.
+- **Mode needs both queries:** the viewer waits for the experience and the reflections list (`queryKeys.reflections`, size=100) before rendering, so it never flashes the wrong mode. Review mode starts at page 1 and makes no `viewed` calls (the in-progress guard would 409 them).
+- **Pageable on the wire:** the generated schema types `pageable` as one object, but Spring wants flat `?page=0&size=100`, so `useReflectedCareers` passes a `querySerializer`. Other tickets reading that list should reuse this hook and key.
+- **Unavailable state** covers a 404/409 from the experience GET and from `viewed`.
