@@ -49,3 +49,8 @@ _Last updated: 2026-11-18_
 - The temporary `/debug/me` page is gone; the clean-browser CSRF e2e now signs in through `/signin`.
 - Session code: pure rules in `src/lib/session/model.ts` (role home, prefix guard, nav), React in `session.tsx` (`useMe`, `useSignIn`, `useSignOut`, `RoleGuard`). Query keys live in `src/lib/query/keys.ts`. Role layouts wrap `PortalShell`.
 - The 429 sign-in test mocks the response, because a real 429 would lock the shared demo accounts/IP for the other specs.
+
+## Feed card (ticket 09)
+
+- **No parallel experience fetch (diverges from R3.2):** the real `GET /api/feed/next` card already carries `lastViewedPage` (and the generated schema has it), so "Start" / "Continue (page n of m)" is computed from the card alone (`src/lib/feed/model.ts`). One request, no loading flash of "Start". `queryKeys.experience(id)` is added for the career page ticket.
+- **"n" is `lastViewedPage`:** Continue shows how many pages are already viewed, out of `lastPage`.
