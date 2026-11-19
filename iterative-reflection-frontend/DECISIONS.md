@@ -33,3 +33,12 @@ _Last updated: 2026-11-18_
 - **E2E data hygiene (N6.2):** unique emails per run plus `pnpm e2e:reset`, because dev H2 is file-based and keeps data.
 - **Generated schema is committed (R11.4):** OpenAPI is only on in dev.
 - **Repo layout:** the frontend lives in the root repo as a sibling of `mvp/`, on `spec/frontend`, with its own job in the root CI workflow.
+
+## Typed API client (ticket 02, 2026-11-18)
+
+- **CSRF behaviour, verified on the running backend (R11.3):** `XSRF-TOKEN` is issued on any GET that loads the token, including the anonymous 401 from `GET /api/me`; a POST never issues it. Sign-in, sign-out and `PUT /api/me/password` clear the cookie instead of rotating it, so the next mutation has no token until another GET. The client therefore primes with `GET /api/me` whenever the cookie is missing before a mutation, not just the first one.
+- **A CSRF 403 is identical to a role-denial 403** (`Access is denied.`). The client re-primes after a mutation 403 and retries once only if the token changed; otherwise it is a real denial and `onForbidden` fires. `onForbidden` also fires if the retry still returns 403.
+- **Sign-in/sign-up 401s don't fire `onUnauthorized`:** there it means wrong credentials, not an expired session.
+- **CORS forces the dev port (R11.2):** the backend only accepts `Origin: http://localhost:5173` (`app.frontend-origin`); anything else gets a text/plain 403 "Invalid CORS request" through the dev rewrite. `pnpm dev` and Playwright default to port 5173. Other ports need the backend started with `--app.frontend-origin`.
+- **Client built on `openapi-fetch`** with a custom `fetch` that holds the CSRF/error logic; errors are thrown as `ApiError` (network failure is `status: 0`).
+- `vitest.config.ts` renamed to `.mts` (ESM in a CommonJS package).
