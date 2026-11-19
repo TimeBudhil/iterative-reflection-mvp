@@ -44,7 +44,7 @@ test("student pages load no third-party scripts, fonts or styles", async ({ page
   await signIn(page, "student1@demo.example");
   await walk(page, ["/student/feed", "/student/journey", "/student/settings", "/student/intake"]);
   await page.goto("/student/feed");
-  const href = await page.getByRole("link", { name: "Start", exact: true }).getAttribute("href");
+  const href = await page.getByRole("link", { name: /^(Start|Continue)/ }).getAttribute("href");
   if (href) await walk(page, [href]);
   expect(w.offenders).toEqual([]);
 });
