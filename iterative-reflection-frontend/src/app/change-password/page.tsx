@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { statusCopy } from "@/lib/api/error-copy";
 import { roleHome, validatePasswordChange, type PasswordFormErrors } from "@/lib/session/model";
 import { isUnauthorized, useChangePassword, useMe, useSignOut } from "@/lib/session/session";
 
-type ApiLikeError = { status?: number; detail?: string; fieldErrors?: Record<string, string> };
+type ApiLikeError = { status?: number; fieldErrors?: Record<string, string> };
 
 /** Maps a failed PUT onto the form: field errors by name; a field-less 400 is the wrong current password. */
 function serverErrors(error: unknown): { fields: PasswordFormErrors; general: string | null } {
@@ -19,10 +20,10 @@ function serverErrors(error: unknown): { fields: PasswordFormErrors; general: st
     const fields: PasswordFormErrors = {};
     if (e.fieldErrors?.newPassword) fields.newPassword = e.fieldErrors.newPassword;
     if (e.fieldErrors?.currentPassword) fields.currentPassword = e.fieldErrors.currentPassword;
-    if (Object.keys(fields).length === 0) fields.currentPassword = e.detail || "Current password is incorrect.";
+    if (Object.keys(fields).length === 0) fields.currentPassword = "Current password is incorrect.";
     return { fields, general: null };
   }
-  return { fields: {}, general: "Something went wrong. Please try again." };
+  return { fields: {}, general: statusCopy(typeof e?.status === "number" ? e.status : 0) };
 }
 
 function Field({

@@ -74,7 +74,7 @@ function IntakeForm({ questions, existing }: { questions: IntakeQuestion[]; exis
         if (!(err instanceof ApiError)) return setFormError(statusCopy(0));
         if (isNotYetAvailable(err)) return setUnavailable(true);
         setServerErrors(err.fieldErrors);
-        if (err.status !== 400 || Object.keys(err.fieldErrors).length === 0) setFormError(err.status === 409 ? err.detail : statusCopy(err.status));
+        if (err.status !== 400 || Object.keys(err.fieldErrors).length === 0) setFormError(statusCopy(err.status));
       },
     });
   }
