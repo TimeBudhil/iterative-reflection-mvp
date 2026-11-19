@@ -127,3 +127,7 @@ _Last updated: 2026-11-18_
 - `useAuditLog(page, studentId?)` (`src/lib/admin/audit.ts`) uses the flat `page=N&size=20[&studentId=N]` `querySerializer` (the generated Pageable object param is ignored by Spring). Key: `queryKeys.adminAudit`.
 - Counselor names come from `useAdminCounselors(0, 100)` + `counselorNameMap`; ids missing from the first 100 counselors (or while the list is unavailable) render as `#id` (`counselorLabel`).
 - The student-ID filter is applied on submit (not per keystroke), validated client-side as a positive integer (leading `#` tolerated), and resets to page 1. Timestamps use the browser-local `toLocaleString()`.
+
+## Ticket 14: edit reflection
+
+- `/student/careers/[id]/reflect` decides create vs edit once on mount from `reflectionFor(careerId)`, so a first submit does not flip into edit mode while navigating away. Edit PUTs and returns to My Journey; the PUT 409 "changed concurrently" shows the R5.6 copy, refetches the reflections list and remounts the form (keyed by `updatedAt`) with the latest values.

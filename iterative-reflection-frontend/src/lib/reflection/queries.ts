@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
-import type { Question, SubmitRequest } from "./form";
+import { isConcurrentEdit, type Question, type SubmitRequest } from "./form";
 
 export function useReflectionQuestions() {
   return useQuery({
@@ -22,6 +22,19 @@ export function useSubmitReflection(careerId: number) {
         qc.invalidateQueries({ queryKey: queryKeys.feed }),
         qc.invalidateQueries({ queryKey: queryKeys.me }),
       ]);
+    },
+  });
+}
+
+/** PUT an edited reflection (R5.4). A 409 optimistic-lock collision refetches the list so the form can show the latest (R5.6). */
+export function useEditReflection(careerId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: SubmitRequest) =>
+      (await api.PUT("/api/careers/{careerId}/reflection", { params: { path: { careerId } }, body })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.reflections }),
+    onError: (e) => {
+      if (isConcurrentEdit(e)) void qc.invalidateQueries({ queryKey: queryKeys.reflections });
     },
   });
 }

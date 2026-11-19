@@ -118,11 +118,16 @@ function Pager({ careerId, experience, mode }: { careerId: number; experience: E
         ) : null}
       </nav>
 
-      {/* Mode actions. Ticket 11 adds "This isn't for me" for in-progress; ticket 14 adds "Edit reflection" for review (state.showEditReflection). */}
+      {/* Mode actions: Reflect / Abandon for in-progress, Edit reflection for review. */}
       <div className="flex gap-2">
         {state.showReflect ? (
           <Link href={`/student/careers/${careerId}/reflect`} className={buttonVariants({})}>
             Reflect on this career
+          </Link>
+        ) : null}
+        {state.showEditReflection ? (
+          <Link href={`/student/careers/${careerId}/reflect`} className={buttonVariants({})}>
+            Edit reflection
           </Link>
         ) : null}
         {mode === "in-progress" ? <AbandonButton careerId={careerId} /> : null}
