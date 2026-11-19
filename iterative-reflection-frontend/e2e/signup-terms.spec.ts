@@ -18,15 +18,16 @@ const submit = (page: Page) => page.getByRole("button", { name: "Create account"
 test("valid signup from a clean browser signs in and lands on the student feed", async ({ page }) => {
   await page.context().clearCookies();
   let payload: Record<string, unknown> = {};
-  page.on("request", (r) => {
-    if (r.url().endsWith("/api/auth/signup")) payload = r.postDataJSON();
+  await page.route("**/api/auth/signup", (route) => {
+    payload = JSON.parse(route.request().postData() ?? "{}");
+    return route.continue();
   });
   await fillSignup(page);
   await expect(submit(page)).toBeDisabled();
   await page.getByLabel(/I agree to the/).check();
   await expect(submit(page)).toBeEnabled();
   await submit(page).click();
-  await expect(page).toHaveURL(/\/student\/feed$/);
+  await expect(page).toHaveURL(/\/student\/feed$/, { timeout: 30_000 }); // first dev compile of the feed is slow
   expect(payload.acceptedTermsVersion).toBe(process.env.NEXT_PUBLIC_TERMS_VERSION ?? "2026-11-18");
   expect(payload).not.toHaveProperty("counselorCode");
 });
@@ -109,6 +110,7 @@ test("unknown counselor code errors on the code field, keeps values, and creates
 
   // No account was created: signing in with those credentials fails.
   await page.getByRole("tab", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/signin$/);
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(PASSWORD);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
