@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
+import { RetryPanel } from "@/components/shared/retry-panel";
 import { BlockView } from "./blocks";
 import { AbandonButton } from "./abandon-button";
 import {
@@ -27,25 +28,14 @@ function Unavailable() {
   );
 }
 
-function Retry({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div role="alert">
-      <p>Something went wrong.</p>
-      <button type="button" className="mt-2 underline" onClick={onRetry}>
-        Try again
-      </button>
-    </div>
-  );
-}
-
 /** Loads the experience and the reflected list (which decides the mode, R4.5), then hands over to the viewer. */
 export function ExperienceViewer({ careerId }: { careerId: number }) {
   const experience = useExperience(careerId);
   const reflected = useReflectedCareers();
 
   if (experience.isError && isUnavailable(experience.error)) return <Unavailable />;
-  if (experience.isError) return <Retry onRetry={() => experience.refetch()} />;
-  if (reflected.isError) return <Retry onRetry={() => reflected.refetch()} />;
+  if (experience.isError) return <RetryPanel error={experience.error} onRetry={() => void experience.refetch()} />;
+  if (reflected.isError) return <RetryPanel error={reflected.error} onRetry={() => void reflected.refetch()} />;
   if (!experience.data || !reflected.data) return <Skeleton className="h-64 w-full" aria-label="Loading" />;
 
   const mode = modeFor(careerId, reflected.data.content ?? []);

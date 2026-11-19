@@ -143,3 +143,13 @@ test("after viewing page 2, going back to the feed shows Continue (page 2 of m) 
   await page.getByRole("link", { name: "Feed", exact: true }).first().click();
   await expect(page.getByRole("link", { name: `Continue (page 2 of ${last})` })).toBeVisible();
 });
+
+test("an unexpected error loading the experience shows the shared retry panel with the request id", async ({ page }) => {
+  const id = await freshStudent(page);
+  await page.route(`**/api/careers/${id}/experience`, (route) =>
+    route.fulfill({ status: 500, contentType: "application/problem+json", headers: { "X-Request-Id": "req-viewer-1" }, body: "{}" }),
+  );
+  await page.goto(`/student/careers/${id}`);
+  await expect(page.getByTestId("retry-panel")).toBeVisible();
+  await expect(page.getByTestId("request-id")).toHaveText("req-viewer-1");
+});
