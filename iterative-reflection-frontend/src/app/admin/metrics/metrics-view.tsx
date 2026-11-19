@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { statusCopy } from "@/lib/api/error-copy";
 import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
 import { barWidths, rangeFromParams, rangeToQuery, rangeToSearch, type VerdictCounts } from "@/lib/metrics/model";
@@ -62,7 +63,7 @@ export function MetricsView() {
 
       {q.isError ? (
         <p role="alert" className="text-sm text-destructive">
-          {(q.error as { detail?: string }).detail ?? "Could not load metrics."}
+          {statusCopy((q.error as { status?: number }).status ?? 0)}
         </p>
       ) : (
         <>

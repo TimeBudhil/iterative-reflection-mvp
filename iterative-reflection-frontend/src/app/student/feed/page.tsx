@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { IntakePromptModal } from "@/components/intake/intake-prompt-modal";
+import { RetryPanel } from "@/components/shared/retry-panel";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { feedView } from "@/lib/feed/model";
@@ -16,12 +17,7 @@ export default function Page() {
       {feed.isPending ? (
         <Skeleton className="h-48 w-full" aria-label="Loading" />
       ) : feed.isError ? (
-        <div role="alert">
-          <p>Something went wrong.</p>
-          <button type="button" className="mt-2 underline" onClick={() => feed.refetch()}>
-            Try again
-          </button>
-        </div>
+        <RetryPanel error={feed.error} onRetry={() => void feed.refetch()} />
       ) : (
         <FeedBody data={feed.data} />
       )}
