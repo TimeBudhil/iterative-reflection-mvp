@@ -5,12 +5,9 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
-import { isSigningOut, setAccessDenied } from "./access";
+import { hasOwnForbiddenCopy, isSigningOut, setAccessDenied } from "./access";
 import { identityChanged, signInHref } from "./model";
 import { fetchMe, type Me } from "./session";
-
-/** Pages whose 403 has its own copy (R9.5: counselor student detail), so the generic no-access panel stays out. */
-const HAS_OWN_403_COPY = /^\/counselor\/students\/[^/]+$/;
 
 const currentPath =() => window.location.pathname + window.location.search;
 
@@ -41,7 +38,7 @@ export function SessionEvents() {
             queryFn: fetchMe,
           })
           .then((after) => {
-            if (!identityChanged(before, after) && !HAS_OWN_403_COPY.test(path)) setAccessDenied(path);
+            if (!identityChanged(before, after) && !hasOwnForbiddenCopy()) setAccessDenied(path);
           })
           .catch(() => {
             // A 401 here is handled by onUnauthorized; any other failure leaves the page as is.
