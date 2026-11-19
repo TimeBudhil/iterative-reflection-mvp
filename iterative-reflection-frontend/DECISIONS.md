@@ -15,9 +15,9 @@ _Last updated: 2026-11-18_
 
 - **Review mode comes from the reflections list (R4.5):** the experience response has no "reflected" flag. A `?mode=review` param was rejected because a bookmarked URL would lose it.
 - **Edit prefill reuses the reflections list (R5.4):** there's no single-reflection GET, and `ReflectionView` already carries the answers and verdict.
-- **The feed card also fetches the experience (R3.2):** the card lacks `lastViewedPage`. The GET has no side effects.
+- **The feed card also fetches the experience (R3.2):** the card lacks `lastViewedPage`. The GET has no side effects. _(Superseded: see "Feed card (ticket 09)", since the real card does carry `lastViewedPage`.)_
 - **Concurrent-edit copy (R5.6):** the backend's 409 is an optimistic-lock collision. Requests carry no version, so "changed in another tab" can't be promised.
-- **CSRF bootstrap (R11.3):** `csrf.spa()` may not have issued `XSRF-TOKEN` before the first sign-in POST, and the token may rotate at login. The client primes it with `/api/me` and retries once on a CSRF 403.
+- **CSRF bootstrap (R11.3):** `csrf.spa()` may not have issued `XSRF-TOKEN` before the first sign-in POST, and the token may rotate at login. The client primes it with `/api/me` and retries once on a CSRF 403. _(Superseded: see "Typed API client (ticket 02)" for the verified behaviour. The cookie is cleared, not rotated, and priming happens whenever it is missing.)_
 - **Client-side guards, no middleware (R2.2):** middleware would need a backend call per navigation. The backend enforces permissions anyway (N2.3).
 - **Unexpected 403s re-run the guards (R2.7):** N5.2 needed copy for every status, and only R9.5 covered 403.
 - **Placeholder terms (R1.7):** version `2026-11-18`, marked as a draft. Real text before any school pilot.
@@ -88,7 +88,7 @@ _Last updated: 2026-11-18_
 ## Counselor student detail (ticket 18)
 
 - **Reflection answers typed locally:** the generated schema types `reflections[].answers` as the intake `Answer`; the real wire shape is `{key, questionVersion, prompt, score, openText|null}`. `src/lib/counselor/student-detail.ts` declares it and maps the response to a view model, keeping API order.
-- **403 handled in the page:** the page shows "This student hasn't shared their progress with you." itself (the backend 403s identically for unlinked, revoked, deactivated counselor and nonexistent student). `SessionEvents` still refetches `/api/me` on that 403 (a changed role still re-runs the guards) but skips the generic no-access panel for `/counselor/students/[id]`.
+- **403 handled in the page:** the page shows "This student hasn't shared their progress with you." itself (the backend 403s identically for unlinked, revoked, deactivated counselor and nonexistent student). `SessionEvents` still refetches `/api/me` on that 403 (a changed role still re-runs the guards) but skips the generic no-access panel for `/counselor/students/[id]`. _(Superseded: see "Code review fixes". The page now opts out with `useOwnForbiddenCopy()`, and the session module knows no routes.)_
 - **Affinity scores are not shown:** R9.5 asks for tag + category only.
 - **E2E seeding:** `e2e/support/seed-student.ts` builds a linked student with reflections, an abandoned career and intake through the real API (the demo students have no activity).
 
@@ -106,7 +106,10 @@ _Last updated: 2026-11-18_
 - **Mode needs both queries:** the viewer waits for the experience and the reflections list (`queryKeys.reflections`, size=100) before rendering, so it never flashes the wrong mode. Review mode starts at page 1 and makes no `viewed` calls (the in-progress guard would 409 them).
 - **Pageable on the wire:** the generated schema types `pageable` as one object, but Spring wants flat `?page=0&size=100`, which the client-level `serializeQuery` (`src/lib/api/client.ts`) now handles. Other tickets reading that list should reuse this hook and key.
 - **Unavailable state** covers a 404/409 from the experience GET and from `viewed`.
-- **Signup error mapping (R1.6):** the backend's under-13 400 has only `detail` (no `errors[]`) and a bad counselor code is a 404 with no field, so the form maps by status: 400+`errors[]` to fields, 400 mentioning "13" to birthdate, 404 to the code field, 409 to email. Under-13 is also checked client-side. Signup does not start a session, so the form signs in right after the 201.
+
+## Student signup and terms (ticket 06)
+
+- **Signup error mapping (R1.6):** the backend's under-13 400 has only `detail` (no `errors[]`) and a bad counselor code is a 404 with no field, so the form maps by status: 400+`errors[]` to fields, 400 mentioning "13" to birthdate (the `isUnder13` predicate), 404 to the code field, 409 to email. Under-13 is also checked client-side. Signup does not start a session, so the form signs in right after the 201.
 
 ## Session expiry and error routing (ticket 04)
 
@@ -148,3 +151,53 @@ _Last updated: 2026-11-18_
 - **Pages with their own 403 copy** call `useOwnForbiddenCopy()` (`src/lib/session/access.ts`) while mounted; the global 403 handler skips the no-access panel then. The session module knows no routes.
 - **Backend-text matching** lives in named, unit-tested predicates in the models: `isNotYetAvailable` (intake), `isUnviewedLastPage` (reflection), `isConcurrentEdit` (reflection), `isUnder13` (signup).
 - **E2E helpers** (`signIn`, `xsrf`/`csrfHeaders`, `signUpStudent`, `freshStudent`) live in `e2e/support/helpers.ts`. Specs use Playwright's `baseURL` and relative `/api/...` through the Next rewrite, so they run on any `NEXT_PORT`/`BACKEND_PORT`; the seeding helpers read `baseURL` from the running project.
+
+## Tooling skeleton (ticket 01)
+
+- **Fonts come from the `geist` npm package** (`geist/font/sans`, `geist/font/mono`), bundled and served from the app's origin. No Google Fonts fetch (N2.6).
+- **`engines.node` is `>=24`, not strict:** `.nvmrc` pins 24 for CI and deploys, but local Node 25 still works.
+- **`typecheck` runs `next typegen` first,** because `LayoutProps`/route types are generated. `start` runs the standalone `server.js`.
+- **shadcn set up by hand** (`components.json`, `cn`, primitives copied in), not via its CLI. Regenerating a primitive with the CLI can undo local fixes (see the dialog focus fix under ticket 24).
+
+## Forced password change (ticket 07) and sign-in landing
+
+- **`mustChangePassword` takes priority over `?next=`:** `postSignInPath(me, next)` (`src/lib/session/model.ts`) sends a user on a temporary password to `/change-password` whatever `next` says. Otherwise a safe `next` is honoured, and then the role home. `landingFor(me)` is the same rule without `next`, used by `/`, signed-in `/signin` and signup's auto sign-in. Decided while merging tickets 04 and 07.
+- While the flag is set, the guard allows only `/change-password` (and sign-out).
+
+## Abandon a career (ticket 11)
+
+- `useAbandonCareer` invalidates `queryKeys.feed` and removes the experience cache entry, so the new card shows at once. A failed abandon closes the dialog and shows the `statusCopy` text as a toast.
+
+## Submit a reflection (ticket 12)
+
+- **Double submit is blocked on the client (R5.5):** a repeated `POST` doesn't return "already reflected". It returns the in-progress guard's 409 ("Finish your current career..."). So a ref lock plus the disabled button stop the second request.
+- **409s on submit:** the unviewed-last-page 409 (`isUnviewedLastPage`) sends the student back to the experience (R5.6). Any other 409 shows "not open for reflection" with a link to the feed.
+- The form is one pure model (`src/lib/reflection/form.ts`) plus `ReflectionForm`, shared by create (POST) and edit (PUT, ticket 14). The 1–10 scale is a radio-based `SegmentedControl`, so arrow keys work natively.
+
+## Admin metrics (ticket 20)
+
+- **Plain CSS bar list, no chart library:** keeps third-party code out (N2.6) and is readable by screen readers as a labelled list with counts.
+- **Date filter lives in the URL** via `router.replace` (no history entry per edit). Empty dates are left out, so clearing both returns to all-time. A ref tracks the latest range so quick successive edits don't overwrite each other.
+
+## Full smoke suite (ticket 22)
+
+- `smoke/full-flow.spec.ts` drives admin → create counselor → forced change → student signup with the join code → feed card, all through the UI.
+- **`Secure` cookie is asserted only when the base URL is https,** so the same spec can dry-run on plain HTTP.
+- **Not run against the rehearsal:** no docker/mkcert/Firefox on the dev machine. It passed a dry run against the dev stack (`SMOKE_BASE_URL=http://localhost:<port>`, demo admin standing in for the bootstrap admin) on Chromium and WebKit only.
+
+## Per-role E2E (ticket 23)
+
+- **Sign-in throttle and repeat runs:** the backend locks an IP out for 15 minutes after 5 failed sign-ins, and full suites trigger it. Restart the backend between full runs (or raise `identity.rate-limit.*` via dev run args). `pnpm e2e:reset` (`rm -rf ../mvp/data`) wipes the dev DB. Unique `e2e+<timestamp>` emails keep runs from colliding.
+
+## Accessibility, keyboard and responsive (ticket 24)
+
+- **Sidebar collapses below 1280 px (N4.2):** `portal-shell.tsx` shows a top bar with a "Menu" button (`aria-expanded`) holding the nav and user menu, and it closes after a link is picked. 1280 was chosen because the fixed sidebar crowded the content at 1024 and 768.
+- **Dialogs restore focus to their opener:** dialogs are opened from plain buttons, not `DialogTrigger`, so Radix had nowhere to return focus. `src/components/ui/dialog.tsx` handles `onCloseAutoFocus` to restore it. Don't overwrite it by regenerating the shadcn primitive.
+- axe runs WCAG 2 A/AA and fails on serious/critical only. Keyboard and layout checks ran on Chromium only.
+
+## Performance, third-party and error copy (ticket 25)
+
+- **Lighthouse is measured on the production standalone build.** For signed-in pages, the session cookie is set in a Playwright Chromium and Lighthouse attaches to it (`--port`, `--disable-storage-reset`), because passing the cookie as a header didn't work.
+- The third-party check allows cross-origin requests only from inside embed iframes (the CSP `frame-src` hosts).
+- The error-copy sweep replaced three places that rendered raw `detail` (admin metrics, change-password, intake 409) with `statusCopy`. `e2e/error-copy.spec.ts` injects a poison `detail` on every page's requests to keep it that way.
+- The shared `RetryPanel` (`src/components/shared/retry-panel.tsx`) is the merged version of tickets 04 and 17. Its button reads "Try again", and the sign-in form shows the request ID only for 5xx and network errors.
