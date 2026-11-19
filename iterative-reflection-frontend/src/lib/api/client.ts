@@ -10,6 +10,24 @@ import type { paths } from "./schema";
  * 401/403 hooks.
  */
 
+/**
+ * Endpoints the backend serves but OpenAPI doesn't describe (Spring's logout filter, not a controller).
+ * `pnpm gen:api` never produces these, so they're declared by hand here.
+ */
+type ManualPaths = {
+  "/api/auth/signout": {
+    parameters: { query?: never; header?: never; path?: never; cookie?: never };
+    get?: never;
+    put?: never;
+    post: { parameters: { query?: never; header?: never; path?: never; cookie?: never }; requestBody?: never; responses: { 204: { headers: Record<string, unknown>; content?: never } } };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+};
+
 export type ApiErrorInit = {
   status: number;
   detail: string;
@@ -143,7 +161,7 @@ export function createApiClient(options: ApiClientOptions = {}) {
     throw error;
   }
 
-  const client = createClient<paths>({
+  const client = createClient<paths & ManualPaths>({
     baseUrl,
     // openapi-fetch hands us a fully built Request.
     fetch: (input) => send(input as Request),
