@@ -2,6 +2,8 @@
 export const queryKeys = {
   me: ["me"] as const,
   pilotMetrics: (from: string, to: string) => ["admin", "pilot-metrics", from, to] as const,
+  adminCounselorsAll: ["admin", "counselors"] as const,
+  adminCounselors: (page: number, size: number) => ["admin", "counselors", page, size] as const,
   reflections: ["reflections"] as const,
   counselorMe: ["counselor", "me"] as const,
   counselorStudents: (page: number) => ["counselor", "students", page] as const,

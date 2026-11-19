@@ -56,6 +56,13 @@ _Last updated: 2026-11-18_
 - **Paged queries need a custom `querySerializer`:** the generated schema models Spring Pageable as one object param, which openapi-fetch serialises in a form the backend ignores (page 2 returned page 1). Send flat `page=N&size=20` instead.
 - **Rotate returns 200 `{joinCode}`**, and the profile query is invalidated so the new code appears.
 
+## Admin counselor management (ticket 19)
+
+- **Reusable list hook:** `useAdminCounselors(page, size)` in `src/lib/admin/counselors.ts` (flat `page`/`size` `querySerializer`, as in ticket 17). Ticket 21 can call it with `size=100` and build an id-to-name map with `counselorNameMap` (`counselor-model.ts`). Mutations invalidate `queryKeys.adminCounselorsAll`.
+- **Create dialog** swaps to a "Counselor created" state carrying the share-the-temporary-password notice; the list jumps to page 1 (newest first) so the new row is visible. 409 maps to the email field, 400 `errors[]` to their fields.
+- **Forced-change e2e** only asserts the new counselor lands on `/change-password`; the full flow stays in `forced-password-change.spec.ts` (its sign-out assertion was loosened to accept the `?next=...&expired=1` that ticket 04 adds).
+- **Dev gotcha:** a scratch H2 file that outlived a long pause started rejecting `users` inserts (`users_role_ck`, surfaced as a misleading 409 "email exists"); deleting the DB fixed it.
+
 ## Settings: Profile and Password (ticket 08)
 
 - **One shared `SettingsPage`** (`src/components/settings/settings-page.tsx`) backs all three role pages. It renders Profile then Password, then its `children`. Later cards (student My counselors, Interests) are built on `SettingsCard id title` and passed as children in `src/app/student/settings/page.tsx`; the `id` is the `#anchor`. Anchor scrolling is done in an effect because the cards mount after `/api/me` loads.

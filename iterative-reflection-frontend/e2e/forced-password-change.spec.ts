@@ -83,5 +83,5 @@ test("sign out still works from /change-password", async ({ page, playwright }) 
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/signin$/);
   await page.goto("/counselor/students");
-  await expect(page).toHaveURL(/\/signin$/);
+  await expect(page).toHaveURL(/\/signin(\?|$)/); // ticket 04 appends ?next=...&expired=1
 });
