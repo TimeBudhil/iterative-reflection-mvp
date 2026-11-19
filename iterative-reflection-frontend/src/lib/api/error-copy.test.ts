@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { isRetryable, statusCopy } from "./error-copy";
+import { ApiError } from "./client";
+import { isRetryable, mapFieldErrors, statusCopy } from "./error-copy";
+
+describe("mapFieldErrors", () => {
+  const err = (status: number) => new ApiError({ status, detail: "x", fieldErrors: { email: "bad", other: "no" } });
+  it("keeps only the form's own fields from a 400", () => {
+    expect(mapFieldErrors(err(400), ["email", "name"])).toEqual({ email: "bad" });
+  });
+  it("returns nothing for other statuses and non-ApiErrors", () => {
+    expect(mapFieldErrors(err(409), ["email"])).toEqual({});
+    expect(mapFieldErrors(new Error("boom"), ["email"])).toEqual({});
+    expect(mapFieldErrors(null, ["email"])).toEqual({});
+  });
+});
 
 describe("statusCopy", () => {
   it("has written copy for every status a page can receive", () => {

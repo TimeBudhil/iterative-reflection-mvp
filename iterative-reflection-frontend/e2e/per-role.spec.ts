@@ -1,18 +1,12 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { counselorContext, seedLinkedStudent } from "./support/seed-student";
+import { signIn } from "./support/helpers";
 
 // Per-role happy paths through the UI only, against the dev backend (N6.2). Emails are unique per run.
 const PASSWORD = "correct-horse-battery";
 const TEMP = "temporary-pass-1";
 const stamp = `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 const student = { email: `e2e+student-${stamp}@example.com`, name: `E2E Student ${stamp}` };
-
-async function signIn(page: Page, email: string, password: string) {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-}
 
 /** One trip round the loop: Start, Next to the last page, Reflect, answer, Submit. Nothing else is clicked. */
 async function reflectOnce(page: Page, verdict: "YES" | "MAYBE" | "NO") {

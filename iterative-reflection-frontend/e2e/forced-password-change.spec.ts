@@ -1,39 +1,27 @@
-import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext } from "@playwright/test";
+import { csrfHeaders, signIn } from "./support/helpers";
 
-// Needs the dev backend (BACKEND_URL, default demo admin admin@demo.example / "demo").
-const BACKEND = process.env.BACKEND_URL ?? `http://localhost:${process.env.BACKEND_PORT ?? 8080}`;
+// Needs the dev backend (demo admin admin@demo.example / "demo"). Talks to it through the Next `/api` rewrite.
 const TEMP = "temporary-pass-1";
 
 /** Creates a counselor (mustChangePassword: true) through the admin API. */
 async function createCounselor(request: APIRequestContext): Promise<string> {
   const email = `e2e+${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`;
-  await request.get(`${BACKEND}/api/me`); // primes XSRF-TOKEN
-  const csrf = async () => (await request.storageState()).cookies.find((c) => c.name === "XSRF-TOKEN")?.value ?? "";
-  let res = await request.post(`${BACKEND}/api/auth/signin`, {
+  let res = await request.post("/api/auth/signin", {
     data: { email: "admin@demo.example", password: "demo" },
-    headers: { "X-XSRF-TOKEN": await csrf() },
+    headers: await csrfHeaders(request),
   });
   expect(res.ok()).toBeTruthy();
-  await request.get(`${BACKEND}/api/me`); // signin cleared the CSRF cookie
-  res = await request.post(`${BACKEND}/api/admin/counselors`, {
+  res = await request.post("/api/admin/counselors", {
     data: { email, displayName: "E2E Counselor", temporaryPassword: TEMP },
-    headers: { "X-XSRF-TOKEN": await csrf() },
+    headers: await csrfHeaders(request), // signin cleared the CSRF cookie, so re-prime
   });
   expect(res.status()).toBe(201);
   return email;
 }
 
-async function signIn(page: Page, email: string, password: string) {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-}
-
-test("a user on a temporary password is held at /change-password until they pick a new one", async ({ page, playwright }) => {
-  const adminCtx = await playwright.request.newContext();
-  const email = await createCounselor(adminCtx);
-  await adminCtx.dispose();
+test("a user on a temporary password is held at /change-password until they pick a new one", async ({ page, request }) => {
+  const email = await createCounselor(request);
 
   await signIn(page, email, TEMP);
   await expect(page).toHaveURL(/\/change-password$/);
@@ -73,10 +61,8 @@ test("a user on a temporary password is held at /change-password until they pick
   await expect(page).toHaveURL(/\/counselor\/students$/);
 });
 
-test("sign out still works from /change-password", async ({ page, playwright }) => {
-  const adminCtx = await playwright.request.newContext();
-  const email = await createCounselor(adminCtx);
-  await adminCtx.dispose();
+test("sign out still works from /change-password", async ({ page, request }) => {
+  const email = await createCounselor(request);
 
   await signIn(page, email, TEMP);
   await expect(page).toHaveURL(/\/change-password$/);

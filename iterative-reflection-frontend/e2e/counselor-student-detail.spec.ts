@@ -1,13 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seedLinkedStudent, type SeededStudent } from "./support/seed-student";
+import { signIn } from "./support/helpers";
 
 // Needs the dev backend (demo accounts, password "demo"); seeds a real linked student through the API.
 async function signInCounselor(page: Page) {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill("counselor@demo.example");
-  await page.getByLabel("Password").fill("demo");
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page).toHaveURL(/\/counselor\/students$/);
+  await signIn(page, "counselor@demo.example", "demo", /\/counselor\/students$/);
 }
 
 let rich: SeededStudent;

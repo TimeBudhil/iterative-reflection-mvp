@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useChangePassword } from "@/lib/settings/api";
-import { validatePasswordChange, type PasswordErrors } from "@/lib/settings/model";
+import { useChangePassword } from "@/lib/session/session";
+import { mapPasswordChangeError, validatePasswordChange, type PasswordFormErrors } from "@/lib/validation/rules";
 import { SettingsCard } from "./settings-card";
 
 function Field({
@@ -50,7 +50,7 @@ export function PasswordCard() {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [errors, setErrors] = useState<PasswordErrors>({});
+  const [errors, setErrors] = useState<PasswordFormErrors>({});
 
   return (
     <SettingsCard id="password" title="Password" description="Use 12 to 72 characters.">
@@ -59,7 +59,7 @@ export function PasswordCard() {
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
-          const found = validatePasswordChange({ current, next, confirm });
+          const found = validatePasswordChange({ currentPassword: current, newPassword: next, confirm });
           setErrors(found);
           if (Object.keys(found).length) return;
           change.mutate(
@@ -72,17 +72,15 @@ export function PasswordCard() {
                 toast.success("Password changed.");
               },
               onError: (err) => {
-                const { status, fieldErrors } = err as { status?: number; fieldErrors?: Record<string, string> };
-                if (fieldErrors?.newPassword) setErrors({ next: fieldErrors.newPassword });
-                else if (status === 400) setErrors({ current: "Current password is incorrect." });
-                else setErrors({ current: "Could not change password. Please try again." });
+                const { fields, general } = mapPasswordChangeError(err);
+                setErrors(general ? { currentPassword: general } : fields);
               },
             },
           );
         }}
       >
-        <Field id="current-password" label="Current password" autoComplete="current-password" value={current} onChange={setCurrent} error={errors.current} />
-        <Field id="new-password" label="New password" autoComplete="new-password" value={next} onChange={setNext} error={errors.next} />
+        <Field id="current-password" label="Current password" autoComplete="current-password" value={current} onChange={setCurrent} error={errors.currentPassword} />
+        <Field id="new-password" label="New password" autoComplete="new-password" value={next} onChange={setNext} error={errors.newPassword} />
         <Field id="confirm-password" label="Confirm new password" autoComplete="new-password" value={confirm} onChange={setConfirm} error={errors.confirm} />
         <Button type="submit" disabled={change.isPending}>
           Change password

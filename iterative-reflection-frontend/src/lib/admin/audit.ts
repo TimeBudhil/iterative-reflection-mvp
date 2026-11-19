@@ -14,8 +14,6 @@ export function useAuditLog(page: number, studentId?: number) {
       (
         await api.GET("/api/admin/audit", {
           params: { query: { studentId, pageable: { page, size: AUDIT_PAGE_SIZE } } },
-          querySerializer: () =>
-            `page=${page}&size=${AUDIT_PAGE_SIZE}` + (studentId !== undefined ? `&studentId=${studentId}` : ""),
         })
       ).data!,
     placeholderData: keepPreviousData,

@@ -1,20 +1,15 @@
 import { randomUUID } from "node:crypto";
-import { request, type APIRequestContext } from "@playwright/test";
+import { request, test, type APIRequestContext } from "@playwright/test";
+import { csrfHeaders } from "./helpers";
 
-const baseURL = `http://localhost:${process.env.NEXT_PORT ?? 5173}`;
-
+/** A fresh API context on the running project's baseURL (so any NEXT_PORT works). Call from a test or hook. */
 export async function apiContext(): Promise<APIRequestContext> {
+  const baseURL = test.info().project.use.baseURL!;
   return request.newContext({ baseURL, extraHTTPHeaders: { Origin: baseURL } });
 }
 
-async function xsrf(c: APIRequestContext): Promise<Record<string, string>> {
-  await c.get("/api/me");
-  const cookie = (await c.storageState()).cookies.find((k) => k.name === "XSRF-TOKEN");
-  return { "X-XSRF-TOKEN": decodeURIComponent(cookie?.value ?? "") };
-}
-
 export async function send(c: APIRequestContext, url: string, data?: unknown) {
-  const res = await c.post(url, { data, headers: await xsrf(c) });
+  const res = await c.post(url, { data, headers: await csrfHeaders(c) });
   if (!res.ok()) throw new Error(`POST ${url} -> ${res.status()} ${await res.text()}`);
   return res;
 }

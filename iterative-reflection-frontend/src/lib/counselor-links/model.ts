@@ -1,3 +1,5 @@
+import { TOO_MANY_ATTEMPTS } from "@/lib/api/error-copy";
+
 /** Pure rules for the My counselors card (R8.4 to R8.6). */
 
 /** Join codes are case-insensitive; strip whitespace a user may paste in. */
@@ -13,7 +15,7 @@ export function linkErrorMessage(status: number): string {
     case 409:
       return "You're already linked to this counselor.";
     case 429:
-      return "Too many attempts. Try again in 15 minutes.";
+      return TOO_MANY_ATTEMPTS;
     default:
       return "Could not link. Please try again.";
   }

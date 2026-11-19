@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { guardDecision, identityChanged, landingFor, postSignInPath, navFor, roleHome, safeReturnPath, signInHref, validatePasswordChange } from "./model";
+import { guardDecision, identityChanged, landingFor, postSignInPath, navFor, roleHome, safeReturnPath, signInHref } from "./model";
 
 describe("roleHome", () => {
   it("maps each role to its home", () => {
@@ -100,24 +100,6 @@ describe("landingFor", () => {
   it("prefers the forced change over the role home", () => {
     expect(landingFor({ role: "COUNSELOR", mustChangePassword: true })).toBe("/change-password");
     expect(landingFor({ role: "COUNSELOR", mustChangePassword: false })).toBe("/counselor/students");
-  });
-});
-
-describe("validatePasswordChange", () => {
-  const ok = { currentPassword: "temp", newPassword: "a-long-enough-pw", confirm: "a-long-enough-pw" };
-  it("accepts a 12+ char matching password", () => expect(validatePasswordChange(ok)).toEqual({}));
-  it("accepts exactly 12 chars", () => {
-    const p = "x".repeat(12);
-    expect(validatePasswordChange({ ...ok, newPassword: p, confirm: p })).toEqual({});
-  });
-  it("rejects 11 chars", () => {
-    const p = "x".repeat(11);
-    expect(validatePasswordChange({ ...ok, newPassword: p, confirm: p }).newPassword).toBeTruthy();
-  });
-  it("rejects a mismatched confirm and a blank current password", () => {
-    const e = validatePasswordChange({ ...ok, currentPassword: "", confirm: "different-pw-123" });
-    expect(e.confirm).toBeTruthy();
-    expect(e.currentPassword).toBeTruthy();
   });
 });
 

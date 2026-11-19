@@ -1,15 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
+import { signIn } from "./support/helpers";
 
 // Needs the dev backend (demo admin admin@demo.example / "demo"). Counselors are created with unique e2e+<ts> emails.
 const TEMP = "temporary-pass-1";
 const uniqueEmail = () => `e2e+${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`;
-
-async function signIn(page: Page, email: string, password: string) {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-}
 
 async function signInAdmin(page: Page) {
   await signIn(page, "admin@demo.example", "demo");

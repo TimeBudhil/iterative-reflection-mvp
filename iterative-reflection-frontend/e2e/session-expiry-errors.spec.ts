@@ -1,12 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
+import { signIn as signInTo } from "./support/helpers";
 
 // Needs the dev backend (demo accounts, password "demo").
-async function signIn(page: Page, email = "student1@demo.example") {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill("demo");
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-}
+const signIn = (page: Page, email = "student1@demo.example") => signInTo(page, email);
 
 const NOTICE = "Your session expired. Please sign in again.";
 

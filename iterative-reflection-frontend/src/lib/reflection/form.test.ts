@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canSubmit, clientErrors, isConcurrentEdit, initialDraft, mergeServerErrors, toRequest, type Question } from "./form";
+import { canSubmit, clientErrors, isConcurrentEdit, isUnviewedLastPage, initialDraft, mergeServerErrors, toRequest, type Question } from "./form";
 
 const questions: Question[] = [
   { key: "interest", prompt: "I?", openPrompt: "Why?", minScore: 1, maxScore: 10 },
@@ -64,5 +64,14 @@ describe("isConcurrentEdit", () => {
     expect(isConcurrentEdit({ status: 409, detail: "Finish your current career before starting another." })).toBe(false);
     expect(isConcurrentEdit({ status: 400, detail: "concurrent" })).toBe(false);
     expect(isConcurrentEdit(null)).toBe(false);
+  });
+});
+
+describe("isUnviewedLastPage", () => {
+  it("matches only the 409 that asks to view the whole experience", () => {
+    expect(isUnviewedLastPage({ status: 409, detail: "You must view the whole experience before reflecting." })).toBe(true);
+    expect(isUnviewedLastPage({ status: 409, detail: "Finish your current career before starting another." })).toBe(false);
+    expect(isUnviewedLastPage({ status: 400, detail: "whole experience" })).toBe(false);
+    expect(isUnviewedLastPage(null)).toBe(false);
   });
 });

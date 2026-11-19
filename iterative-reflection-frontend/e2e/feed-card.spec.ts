@@ -1,27 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
+import { signIn as signInTo, signUpStudent, STUDENT_PASSWORD } from "./support/helpers";
 
 // Needs the dev backend. Each test signs up a fresh student through the API (the sign-up UI is another ticket).
-const PASSWORD = "correct-horse-battery";
+const freshStudent = (page: Page) => signUpStudent(page, { prefix: "feed", displayName: "Feed Tester" });
 
-async function freshStudent(page: Page) {
-  const email = `feed-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@e2e.example`;
-  await page.request.get("/api/me"); // primes the XSRF-TOKEN cookie
-  const xsrf = (await page.context().cookies()).find((c) => c.name === "XSRF-TOKEN")!.value;
-  const res = await page.request.post("/api/auth/signup", {
-    headers: { "X-XSRF-TOKEN": xsrf },
-    data: { email, password: PASSWORD, displayName: "Feed Tester", birthdate: "2000-01-01", acceptedTermsVersion: "2026-11-18" },
-  });
-  expect(res.status()).toBe(201);
-  return email;
-}
-
-async function signIn(page: Page, email: string) {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page).toHaveURL(/\/student\/feed$/);
-}
+const signIn = (page: Page, email: string) => signInTo(page, email, STUDENT_PASSWORD, /\/student\/feed$/);
 
 test("shows exactly one card with title, summary, tag chips and minutes; the same card after reload and re-sign-in", async ({ page }) => {
   const email = await freshStudent(page);

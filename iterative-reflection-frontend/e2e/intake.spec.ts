@@ -1,15 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seedLinkedStudent } from "./support/seed-student";
+import { signIn as signInTo } from "./support/helpers";
 
 // Needs the dev backend. Students are created and brought to N reflections through the real API.
 
-async function signIn(page: Page, email: string, password: string) {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page).toHaveURL(/\/student\/feed$/);
-}
+const signIn = (page: Page, email: string, password: string) => signInTo(page, email, password, /\/student\/feed$/);
 
 test("new intake: chips grouped by category, POST, toast, back to the feed; then edit via Settings with PUT", async ({ page }) => {
   const s = await seedLinkedStudent({ reflections: 3, abandon: false, intake: false });

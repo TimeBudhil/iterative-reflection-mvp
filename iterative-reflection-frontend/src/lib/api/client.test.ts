@@ -208,4 +208,20 @@ describe("api client", () => {
     expect(localStorage.length).toBe(0);
     expect(sessionStorage.length).toBe(0);
   });
+
+  it("flattens a Spring pageable into page/size and keeps other params", async () => {
+    const { api, calls } = setup(() => json({ content: [] }));
+    await api.GET("/api/admin/audit", { params: { query: { studentId: 7, pageable: { page: 2, size: 20 } } } });
+    const url = new URL(calls[0].url);
+    expect(url.searchParams.get("page")).toBe("2");
+    expect(url.searchParams.get("size")).toBe("20");
+    expect(url.searchParams.get("studentId")).toBe("7");
+    expect(url.search).not.toContain("pageable");
+  });
+
+  it("omits undefined query params", async () => {
+    const { api, calls } = setup(() => json({ content: [] }));
+    await api.GET("/api/admin/audit", { params: { query: { studentId: undefined, pageable: { page: 0, size: 20 } } } });
+    expect(new URL(calls[0].url).search).toBe("?page=0&size=20");
+  });
 });

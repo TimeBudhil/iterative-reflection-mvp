@@ -5,14 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ApiError } from "@/lib/api/client";
+import { isRetryable, statusCopy } from "@/lib/api/error-copy";
 import { postSignInPath } from "@/lib/session/model";
 import { useSignIn } from "@/lib/session/session";
 
 function errorCopy(error: unknown): string {
-  const status = (error as { status?: number } | null)?.status;
-  if (status === 401) return "Email or password is incorrect.";
-  if (status === 429) return "Too many attempts. Try again in 15 minutes.";
-  return "Something went wrong. Please try again.";
+  if (error instanceof ApiError && error.status === 401) return "Email or password is incorrect.";
+  return statusCopy(error instanceof ApiError ? error.status : 0);
 }
 
 export function SignInForm() {
@@ -51,6 +51,11 @@ export function SignInForm() {
       {signIn.error && (
         <p role="alert" className="text-sm text-destructive">
           {errorCopy(signIn.error)}
+          {signIn.error instanceof ApiError && isRetryable(signIn.error) && signIn.error.requestId && (
+            <span className="block text-muted-foreground">
+              Request ID: <code data-testid="request-id">{signIn.error.requestId}</code>
+            </span>
+          )}
         </p>
       )}
       <Button type="submit" className="w-full" disabled={signIn.isPending}>

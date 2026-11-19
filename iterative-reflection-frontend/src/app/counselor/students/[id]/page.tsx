@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RetryPanel } from "@/components/shared/retry-panel";
 import { ApiError } from "@/lib/api/client";
+import { useOwnForbiddenCopy } from "@/lib/session/access";
 import { useStudentDetail } from "@/lib/counselor/portal";
 import type { StudentDetailView } from "@/lib/counselor/student-detail";
 
@@ -100,6 +101,7 @@ function Detail({ view }: { view: StudentDetailView }) {
 
 export default function Page() {
   const { id } = useParams<{ id: string }>();
+  useOwnForbiddenCopy(); // a 403 here has its own copy (R9.5), so skip the generic no-access panel
   const detail = useStudentDetail(id);
   const forbidden = detail.error instanceof ApiError && detail.error.status === 403;
 

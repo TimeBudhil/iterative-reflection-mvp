@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { signIn } from "./support/helpers";
 
 // Needs the dev backend (demo accounts, password "demo").
 const ACCOUNTS = {
@@ -7,12 +8,14 @@ const ACCOUNTS = {
   admin: { email: "admin@demo.example", home: /\/admin\/metrics$/, nav: ["Metrics", "Counselors", "Audit log", "Settings"] },
 } as const;
 
-async function signIn(page: Page, email: string, password = "demo") {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-}
+test("a 5xx on sign-in shows the written copy and the request id", async ({ page }) => {
+  await page.route("**/api/auth/signin", (route) =>
+    route.fulfill({ status: 500, contentType: "application/problem+json", headers: { "X-Request-Id": "req-signin-1" }, body: "{}" }),
+  );
+  await signIn(page, "student1@demo.example");
+  await expect(page.locator("form [role=alert]")).toContainText("Something went wrong on our side");
+  await expect(page.getByTestId("request-id")).toHaveText("req-signin-1");
+});
 
 test("/signin?mode=signup selects Sign up, and tab switches update the URL without a reload", async ({ page }) => {
   await page.goto("/signin?mode=signup");

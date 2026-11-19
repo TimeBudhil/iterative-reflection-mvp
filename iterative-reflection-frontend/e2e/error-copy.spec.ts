@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { DEMO_PASSWORD, signIn as signInTo } from "./support/helpers";
 
 // N5.2: every status a page can receive renders written copy, never the backend's `detail` text.
 const LEAK = "RAWLEAK-do-not-render";
@@ -6,11 +7,7 @@ const STATUSES = [400, 404, 409, 429, 500, 503];
 
 async function signIn(page: Page, email: string) {
   await page.context().clearCookies();
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill("demo");
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await page.waitForURL((u) => !u.pathname.startsWith("/signin"));
+  await signInTo(page, email, DEMO_PASSWORD, "away");
 }
 
 /** Fails every /api call of the given methods except the session probe with a problem+json carrying the poison detail. */

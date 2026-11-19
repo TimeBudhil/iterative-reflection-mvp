@@ -1,30 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
+import { signIn as signInTo, signUpStudent } from "./support/helpers";
 
 // Needs the dev backend. Student flows use a freshly signed-up user so demo passwords never change.
 const NEW_PASSWORD = "a-brand-new-password-1";
 const PASSWORD = "initial-password-123";
 
-async function signUpFreshStudent(page: Page) {
-  const email = `settings-${Date.now()}-${Math.floor(Math.random() * 1e6)}@test.example`;
-  // GET /api/me primes the XSRF-TOKEN cookie in the request context.
-  await page.request.get("/api/me");
-  const cookies = await page.context().cookies();
-  const xsrf = cookies.find((c) => c.name === "XSRF-TOKEN")?.value ?? "";
-  const res = await page.request.post("/api/auth/signup", {
-    headers: { "X-XSRF-TOKEN": xsrf },
-    data: { email, password: PASSWORD, displayName: "Fresh Student", birthdate: "2008-01-01", acceptedTermsVersion: "1" },
-  });
-  expect(res.status()).toBe(201);
-  return email;
-}
+const signUpFreshStudent = (page: Page) =>
+  signUpStudent(page, { prefix: "settings", displayName: "Fresh Student", password: PASSWORD, birthdate: "2008-01-01", termsVersion: "1" });
 
-async function signIn(page: Page, email: string, password: string) {
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page).not.toHaveURL(/\/signin/, { timeout: 30_000 });
-}
+const signIn = (page: Page, email: string, password: string) => signInTo(page, email, password, "away");
 
 const ROLES = [
   { role: "student", email: "student1@demo.example", path: "/student/settings" },
@@ -70,7 +54,7 @@ test("password change: mismatch blocked, wrong current on that field, success to
   await page.getByLabel("New password", { exact: true }).fill(NEW_PASSWORD);
   await page.getByLabel("Confirm new password").fill("something-else-entirely");
   await page.getByRole("button", { name: "Change password" }).click();
-  await expect(page.getByText("Passwords do not match.")).toBeVisible();
+  await expect(page.getByText("Passwords don't match.")).toBeVisible();
   expect(puts).toBe(0);
 
   await page.getByLabel("Confirm new password").fill(NEW_PASSWORD);

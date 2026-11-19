@@ -1,27 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
+import { freshStudent as freshStudentFor, xsrf } from "./support/helpers";
 
 // Needs the dev backend. Each test signs up a fresh student through the API.
-const PASSWORD = "correct-horse-battery";
-
-async function xsrf(page: Page) {
-  return (await page.context().cookies()).find((c) => c.name === "XSRF-TOKEN")!.value;
-}
-
-async function freshStudent(page: Page) {
-  const email = `viewer-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@e2e.example`;
-  await page.request.get("/api/me");
-  const res = await page.request.post("/api/auth/signup", {
-    headers: { "X-XSRF-TOKEN": await xsrf(page) },
-    data: { email, password: PASSWORD, displayName: "Viewer Tester", birthdate: "2000-01-01", acceptedTermsVersion: "2026-11-18" },
-  });
-  expect(res.status()).toBe(201);
-  await page.goto("/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page).toHaveURL(/\/student\/feed$/);
-  return Number((await page.getByRole("link", { name: "Start", exact: true }).getAttribute("href"))!.split("/").pop());
-}
+const freshStudent = (page: Page) => freshStudentFor(page, "viewer", "Viewer Tester");
 
 test("pages through the career, saves progress, shows Reflect only on the last page", async ({ page }) => {
   const id = await freshStudent(page);
@@ -131,4 +112,25 @@ test("a reflected career opens in review mode: free navigation, no reflect butto
   await expect(page.getByTestId("page-indicator")).toHaveText(/^Page 3 of/);
   await expect(page.getByRole("link", { name: "Reflect on this career" })).toHaveCount(0);
   expect(viewedCalls).toBe(0);
+});
+
+test("after viewing page 2, going back to the feed shows Continue (page 2 of m) at once", async ({ page }) => {
+  await freshStudent(page); // leaves the feed loaded (and cached) with "Start"
+  await page.getByRole("link", { name: "Start", exact: true }).click();
+  await expect(page.getByTestId("page-indicator")).toHaveText(/^Page 1 of (\d+)$/, { timeout: 30_000 });
+  const last = Number((await page.getByTestId("page-indicator").textContent())!.match(/of (\d+)/)![1]);
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByTestId("page-indicator")).toHaveText(`Page 2 of ${last}`);
+  await page.getByRole("link", { name: "Feed", exact: true }).first().click();
+  await expect(page.getByRole("link", { name: `Continue (page 2 of ${last})` })).toBeVisible();
+});
+
+test("an unexpected error loading the experience shows the shared retry panel with the request id", async ({ page }) => {
+  const id = await freshStudent(page);
+  await page.route(`**/api/careers/${id}/experience`, (route) =>
+    route.fulfill({ status: 500, contentType: "application/problem+json", headers: { "X-Request-Id": "req-viewer-1" }, body: "{}" }),
+  );
+  await page.goto(`/student/careers/${id}`);
+  await expect(page.getByTestId("retry-panel")).toBeVisible();
+  await expect(page.getByTestId("request-id")).toHaveText("req-viewer-1");
 });

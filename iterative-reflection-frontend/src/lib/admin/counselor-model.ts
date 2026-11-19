@@ -1,23 +1,24 @@
+import { ApiError } from "@/lib/api/client";
+import { EMAIL_TAKEN, mapFieldErrors } from "@/lib/api/error-copy";
+import { isValidEmail, passwordLengthError } from "@/lib/validation/rules";
+
 /** Pure rules for the admin counselor form (R10.4) and list helpers. */
 
 export type NewCounselor = { email: string; displayName: string; temporaryPassword: string };
 export type NewCounselorField = keyof NewCounselor;
 export type NewCounselorErrors = Partial<Record<NewCounselorField, string>>;
 
-export const EMAIL_TAKEN = "An account with this email already exists.";
-
 export function validateNewCounselor(v: NewCounselor): NewCounselorErrors {
   const errors: NewCounselorErrors = {};
   const email = v.email.trim();
   if (!email) errors.email = "Enter an email.";
-  else if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "Enter a valid email address.";
+  else if (!isValidEmail(email)) errors.email = "Enter a valid email address.";
 
   if (!v.displayName.trim()) errors.displayName = "Enter a display name.";
   else if (v.displayName.trim().length > 100) errors.displayName = "Use 100 characters or fewer.";
 
-  if (v.temporaryPassword.length < 12) errors.temporaryPassword = "Use at least 12 characters.";
-  else if (v.temporaryPassword.length > 72 || new TextEncoder().encode(v.temporaryPassword).length > 72)
-    errors.temporaryPassword = "Use 72 characters or fewer.";
+  const passwordError = passwordLengthError(v.temporaryPassword);
+  if (passwordError) errors.temporaryPassword = passwordError;
   return errors;
 }
 
@@ -27,11 +28,10 @@ const FIELDS: NewCounselorField[] = ["email", "displayName", "temporaryPassword"
 
 /** Maps a failed `POST /api/admin/counselors`: 400 per field, 409 on the email, anything else general. */
 export function mapCreateCounselorError(error: unknown): MappedCreateError {
-  const { status, fieldErrors } = (error ?? {}) as { status?: number; fieldErrors?: Record<string, string> };
+  const status = error instanceof ApiError ? error.status : undefined;
   if (status === 409) return { fields: { email: EMAIL_TAKEN } };
   if (status === 400) {
-    const fields: NewCounselorErrors = {};
-    for (const f of FIELDS) if (fieldErrors?.[f]) fields[f] = fieldErrors[f];
+    const fields: NewCounselorErrors = mapFieldErrors(error, FIELDS);
     if (Object.keys(fields).length) return { fields };
     return { fields: {}, general: "Please check what you entered and try again." };
   }
