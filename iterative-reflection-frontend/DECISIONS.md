@@ -56,6 +56,14 @@ _Last updated: 2026-11-18_
 - **Paged queries need a custom `querySerializer`:** the generated schema models Spring Pageable as one object param, which openapi-fetch serialises in a form the backend ignores (page 2 returned page 1). Send flat `page=N&size=20` instead.
 - **Rotate returns 200 `{joinCode}`**, and the profile query is invalidated so the new code appears.
 
+## Settings: Profile and Password (ticket 08)
+
+- **One shared `SettingsPage`** (`src/components/settings/settings-page.tsx`) backs all three role pages. It renders Profile then Password, then its `children`. Later cards (student My counselors, Interests) are built on `SettingsCard id title` and passed as children in `src/app/student/settings/page.tsx`; the `id` is the `#anchor`. Anchor scrolling is done in an effect because the cards mount after `/api/me` loads.
+- **Toasts:** `sonner`, mounted once in `src/app/providers.tsx` via `src/components/ui/sonner.tsx` (no next-themes). Use `toast.success(...)` from `"sonner"`.
+- **Wrong current password:** the backend's 400 has no `errors[]` field for it (only `detail`), so any 400 without a `newPassword` field error is shown on the current-password field.
+- The `PATCH /api/me` response replaces the cached `/api/me`, so the user menu updates without a reload. A password change keeps the session; the client re-primes the cleared XSRF cookie on the next mutation.
+- E2E uses a freshly signed-up student (API signup) so demo passwords never change; counselor and admin specs only check the cards and anchors.
+
 ## Deploy rehearsal (ticket 05)
 
 - **Backend image built by `deploy/build-backend.sh`, not compose:** buildpacks (`spring-boot:build-image`) is a Maven goal, so compose just runs the tagged image. `BP_JVM_VERSION=25` matches the pom. `mvp/` is untouched (only the git-ignored `mvp/target/` is written).
