@@ -78,4 +78,11 @@ _Last updated: 2026-11-18_
 - **No parallel experience fetch (diverges from R3.2):** the real `GET /api/feed/next` card already carries `lastViewedPage` (and the generated schema has it), so "Start" / "Continue (page n of m)" is computed from the card alone (`src/lib/feed/model.ts`). One request, no loading flash of "Start". `queryKeys.experience(id)` is added for the career page ticket.
 - **"n" is `lastViewedPage`:** Continue shows how many pages are already viewed, out of `lastPage`.
 
+## Student counselor links (ticket 16)
+
+- **Link errors are mapped by status, not backend text:** the backend says "Unknown join code." / "Already linked to this counselor." / "Too many failed link attempts. Try again later."; the UI shows the spec wording (R8.5) from `src/lib/counselor-links/model.ts`.
+- **Codes are normalized client-side** (whitespace stripped, upper-cased) since the backend is case-insensitive.
+- **List is one request with `size=100`** and the flat `page/size` serializer (no pager in the card); link and revoke invalidate `queryKeys.counselorLinks`.
+- The 429 and Inactive-badge e2e cases mock the response so the real 10-failure limiter and demo data stay untouched.
+
 - **Signup error mapping (R1.6):** the backend's under-13 400 has only `detail` (no `errors[]`) and a bad counselor code is a 404 with no field, so the form maps by status: 400+`errors[]` to fields, 400 mentioning "13" to birthdate, 404 to the code field, 409 to email. Under-13 is also checked client-side. Signup does not start a session, so the form signs in right after the 201.
