@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { counselorNameMap, EMAIL_TAKEN, mapCreateCounselorError, validateNewCounselor } from "./counselor-model";
+import { ApiError } from "@/lib/api/client";
+import { EMAIL_TAKEN } from "@/lib/api/error-copy";
+import { counselorNameMap, mapCreateCounselorError, validateNewCounselor } from "./counselor-model";
+
+const apiError = (status: number, fieldErrors: Record<string, string> = {}) => new ApiError({ status, detail: "x", fieldErrors });
 
 const ok = { email: "a@b.co", displayName: "Ann", temporaryPassword: "twelve-chars!" };
 
@@ -17,14 +21,14 @@ describe("validateNewCounselor", () => {
 });
 
 describe("mapCreateCounselorError", () => {
-  it("puts a 409 on the email", () => expect(mapCreateCounselorError({ status: 409 }).fields.email).toBe(EMAIL_TAKEN));
+  it("puts a 409 on the email", () => expect(mapCreateCounselorError(apiError(409)).fields.email).toBe(EMAIL_TAKEN));
   it("maps 400 field errors", () => {
-    const m = mapCreateCounselorError({ status: 400, fieldErrors: { email: "bad", temporaryPassword: "short", other: "x" } });
+    const m = mapCreateCounselorError(apiError(400, { email: "bad", temporaryPassword: "short", other: "x" }));
     expect(m.fields).toEqual({ email: "bad", temporaryPassword: "short" });
   });
   it("falls back to a general message", () => {
-    expect(mapCreateCounselorError({ status: 400 }).general).toBeDefined();
-    expect(mapCreateCounselorError({ status: 500 }).general).toBeDefined();
+    expect(mapCreateCounselorError(apiError(400)).general).toBeDefined();
+    expect(mapCreateCounselorError(apiError(500)).general).toBeDefined();
   });
 });
 

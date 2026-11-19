@@ -1,3 +1,8 @@
+import { ApiError } from "./client";
+
+export const TOO_MANY_ATTEMPTS = "Too many attempts. Try again in 15 minutes.";
+export const EMAIL_TAKEN = "An account with this email already exists.";
+
 /**
  * One written message per backend status (N5.2), so raw JSON or stack text never reaches the UI.
  * Pages with more specific copy (R1-R10) use their own text and fall back to this.
@@ -17,7 +22,7 @@ export function statusCopy(status: number): string {
     case 409:
       return "That can't be done right now.";
     case 429:
-      return "Too many attempts. Try again in 15 minutes.";
+      return TOO_MANY_ATTEMPTS;
     default:
       return "Something went wrong. Please try again.";
   }
@@ -27,4 +32,18 @@ export function statusCopy(status: number): string {
 export function isRetryable(error: unknown): boolean {
   const status = (error as { status?: unknown } | null)?.status;
   return typeof status === "number" && (status === 0 || status >= 500);
+}
+
+/**
+ * The server's per-field validation messages (R1.5: each `errors[]` entry under its input) for a 400, limited to
+ * the form's own `fields`. Returns `{}` for anything that isn't a 400 `ApiError` or names none of them.
+ */
+export function mapFieldErrors<F extends string>(error: unknown, fields: readonly F[]): Partial<Record<F, string>> {
+  const mapped: Partial<Record<F, string>> = {};
+  if (!(error instanceof ApiError) || error.status !== 400) return mapped;
+  for (const field of fields) {
+    const message = error.fieldErrors[field];
+    if (message) mapped[field] = message;
+  }
+  return mapped;
 }

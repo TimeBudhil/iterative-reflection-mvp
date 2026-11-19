@@ -1,3 +1,6 @@
+import { EMAIL_TAKEN, mapFieldErrors } from "@/lib/api/error-copy";
+import { isValidEmail, passwordLengthError } from "@/lib/validation/rules";
+
 /** Pure signup rules: client-side validation (mirrors the backend) and error-to-field mapping. */
 
 export const TERMS_VERSION = process.env.NEXT_PUBLIC_TERMS_VERSION || "2026-11-18";
@@ -14,7 +17,6 @@ export type SignupField = keyof SignupValues;
 export type FieldErrors = Partial<Record<SignupField, string>>;
 
 export const UNDER_13 = "You must be 13 or older to use this app.";
-export const EMAIL_TAKEN = "An account with this email already exists.";
 
 /** Whole years between `birthdate` (YYYY-MM-DD) and `today`, in UTC. */
 export function ageOn(birthdate: string, today: Date): number {
@@ -29,11 +31,10 @@ export function validateSignup(v: SignupValues, today: Date = new Date()): Field
   const errors: FieldErrors = {};
   const email = v.email.trim();
   if (!email) errors.email = "Enter your email.";
-  else if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "Enter a valid email address.";
+  else if (!isValidEmail(email)) errors.email = "Enter a valid email address.";
 
-  if (v.password.length < 12) errors.password = "Password must be at least 12 characters.";
-  else if (v.password.length > 72 || new TextEncoder().encode(v.password).length > 72)
-    errors.password = "Password must be at most 72 characters.";
+  const passwordError = passwordLengthError(v.password);
+  if (passwordError) errors.password = passwordError;
 
   if (!v.displayName.trim()) errors.displayName = "Enter a display name.";
   else if (v.displayName.length > 100) errors.displayName = "Display name must be at most 100 characters.";
@@ -62,10 +63,7 @@ export function mapSignupError(error: unknown): MappedSignupError {
   const generic = { fields: {}, general: "Something went wrong. Please try again." };
   if (!e || typeof e.status !== "number") return generic;
   if (e.status === 400) {
-    const fields: FieldErrors = {};
-    for (const [field, message] of Object.entries(e.fieldErrors ?? {})) {
-      if ((SIGNUP_FIELDS as string[]).includes(field)) fields[field as SignupField] = message;
-    }
+    const fields: FieldErrors = mapFieldErrors(error, SIGNUP_FIELDS);
     if (Object.keys(fields).length > 0) return { fields };
     if (/13/.test(e.detail ?? "")) return { fields: { birthdate: UNDER_13 } };
     return generic;

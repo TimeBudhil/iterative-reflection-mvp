@@ -1,5 +1,5 @@
 import { ApiError } from "@/lib/api/client";
-import { statusCopy } from "@/lib/api/error-copy";
+import { mapFieldErrors, statusCopy } from "@/lib/api/error-copy";
 
 /** Shared client-side rules that mirror the backend (R1.5, R8.3, R10.4). Pure; forms add their own copy for the rest. */
 
@@ -42,9 +42,7 @@ export function validatePasswordChange(v: PasswordFormValues): PasswordFormError
  */
 export function mapPasswordChangeError(error: unknown): { fields: PasswordFormErrors; general: string | null } {
   if (error instanceof ApiError && error.status === 400) {
-    const fields: PasswordFormErrors = {};
-    if (error.fieldErrors.newPassword) fields.newPassword = error.fieldErrors.newPassword;
-    if (error.fieldErrors.currentPassword) fields.currentPassword = error.fieldErrors.currentPassword;
+    const fields: PasswordFormErrors = mapFieldErrors(error, ["newPassword", "currentPassword"]);
     if (Object.keys(fields).length === 0) fields.currentPassword = "Current password is incorrect.";
     return { fields, general: null };
   }
