@@ -4,6 +4,7 @@ export const queryKeys = {
   pilotMetrics: (from: string, to: string) => ["admin", "pilot-metrics", from, to] as const,
   adminCounselorsAll: ["admin", "counselors"] as const,
   adminCounselors: (page: number, size: number) => ["admin", "counselors", page, size] as const,
+  adminAudit: (page: number, studentId: number | undefined) => ["admin", "audit", page, studentId ?? null] as const,
   reflections: ["reflections"] as const,
   reflectionQuestions: ["reflection-questions"] as const,
   counselorMe: ["counselor", "me"] as const,

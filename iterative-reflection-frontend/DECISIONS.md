@@ -122,3 +122,16 @@ _Last updated: 2026-11-18_
 - **409 handling:** only the "Reflect on at least 3 careers..." detail swaps the form for "The intake opens after your 3rd reflection."; the other 409 ("already submitted") shows its detail inline.
 - **Prompt modal** (`IntakePromptModal` on the feed) is driven by `intakePromptDue` from `/api/me`. Both "Not now" and "Fill it in" call `POST /api/intake/dismiss` first (R3.5: it must not return after either); Esc/overlay counts as "Not now".
 - **Interests card** is a child of `<SettingsPage>` in `src/app/student/settings/page.tsx`, after "My counselors".
+
+## My Journey (ticket 13)
+
+- The shared `useReflectedCareers` query now walks every page at `size=100` (stops at `page.totalPages`) and returns `{ content }`. My Journey, review mode and the reflect page all use it; there is no second reflections query.
+- Pure model in `src/lib/journey/model.ts`; `reflectionFor(careerId)` is for ticket 14. Averages are per answer `key` in first-seen order, shown to one decimal.
+- "Edit reflection" links to `/student/careers/[id]/reflect` (ticket 14 owns prefill and PUT there).
+- The >100 reflections pagination loop is not covered by e2e (would need 101 reflections).
+
+## Admin audit log (ticket 21)
+
+- `useAuditLog(page, studentId?)` (`src/lib/admin/audit.ts`) uses the flat `page=N&size=20[&studentId=N]` `querySerializer` (the generated Pageable object param is ignored by Spring). Key: `queryKeys.adminAudit`.
+- Counselor names come from `useAdminCounselors(0, 100)` + `counselorNameMap`; ids missing from the first 100 counselors (or while the list is unavailable) render as `#id` (`counselorLabel`).
+- The student-ID filter is applied on submit (not per keystroke), validated client-side as a positive integer (leading `#` tolerated), and resets to page 1. Timestamps use the browser-local `toLocaleString()`.
