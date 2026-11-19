@@ -7,7 +7,7 @@ import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
 import { isSigningOut, setAccessDenied } from "./access";
 import { identityChanged, signInHref } from "./model";
-import type { Me } from "./session";
+import { fetchMe, type Me } from "./session";
 
 /** Pages whose 403 has its own copy (R9.5: counselor student detail), so the generic no-access panel stays out. */
 const HAS_OWN_403_COPY = /^\/counselor\/students\/[^/]+$/;
@@ -38,7 +38,7 @@ export function SessionEvents() {
           .fetchQuery({
             queryKey: queryKeys.me,
             staleTime: 0,
-            queryFn: async () => (await api.GET("/api/me")).data as Me,
+            queryFn: fetchMe,
           })
           .then((after) => {
             if (!identityChanged(before, after) && !HAS_OWN_403_COPY.test(path)) setAccessDenied(path);

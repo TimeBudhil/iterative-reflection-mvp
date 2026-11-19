@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api/client";
+import { api, ApiError } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
 import { RetryPanel } from "@/components/shared/retry-panel";
 import { setSigningOut } from "./access";
@@ -18,16 +18,21 @@ export type Me = {
   intakePromptDue: boolean;
 };
 
+/** `GET /api/me`: the one place the current user is fetched (the query below, the 403 refetch, the password refetch). */
+export async function fetchMe(): Promise<Me> {
+  return (await api.GET("/api/me")).data as Me;
+}
+
 /** The `/api/me` query: the single source of truth for who is signed in. A 401 surfaces as `error.status === 401`. */
 export function useMe() {
   return useQuery({
     queryKey: queryKeys.me,
-    queryFn: async () => (await api.GET("/api/me")).data as Me,
+    queryFn: fetchMe,
   });
 }
 
 export function isUnauthorized(error: unknown): boolean {
-  return (error as { status?: number } | null)?.status === 401;
+  return error instanceof ApiError && error.status === 401;
 }
 
 export function useSignIn() {
@@ -68,7 +73,7 @@ export function useChangePassword() {
       await api.PUT("/api/me/password", { body });
       return await qc.fetchQuery({
         queryKey: queryKeys.me,
-        queryFn: async () => (await api.GET("/api/me")).data as Me,
+        queryFn: fetchMe,
         staleTime: 0,
       });
     },
