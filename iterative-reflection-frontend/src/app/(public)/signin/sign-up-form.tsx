@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api/client";
-import { roleHome } from "@/lib/session/model";
+import { landingFor } from "@/lib/session/model";
 import { useSignIn } from "@/lib/session/session";
 import { mapSignupError, TERMS_VERSION, validateSignup, type FieldErrors, type SignupField, type SignupValues } from "@/lib/signup/model";
 
@@ -92,7 +92,7 @@ export function SignUpForm() {
         setErrors(local);
         if (Object.keys(local).length > 0) return;
         signUp.mutate(values, {
-          onSuccess: (me) => router.replace(roleHome(me.role)),
+          onSuccess: (me) => router.replace(landingFor(me)),
           onError: (error) => {
             const mapped = mapSignupError(error);
             setErrors(mapped.fields);
