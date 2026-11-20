@@ -201,3 +201,12 @@ _Last updated: 2026-11-18_
 - The third-party check allows cross-origin requests only from inside embed iframes (the CSP `frame-src` hosts).
 - The error-copy sweep replaced three places that rendered raw `detail` (admin metrics, change-password, intake 409) with `statusCopy`. `e2e/error-copy.spec.ts` injects a poison `detail` on every page's requests to keep it that way.
 - The shared `RetryPanel` (`src/components/shared/retry-panel.tsx`) is the merged version of tickets 04 and 17. Its button reads "Try again", and the sign-in form shows the request ID only for 5xx and network errors.
+
+## Visual identity: Grove (update 1)
+
+- **Palette and slots:** Grove is `background #edefeb`, `surface #ffffff`, `foreground #121511`, `primary #163300` (+ white text), `highlight #f08952`, `highlight-text #a25a0e`, `positive #d6e4e8` (+ `#163300` text), neutral `muted`/`muted-foreground`, and `destructive` red. Slots: background, surface, foreground, muted, muted-foreground, border, primary, primary-foreground, highlight, highlight-text, positive, positive-foreground, destructive, ring. Components use slot names only; raw values live in `globals.css`, and `tokens.test.ts` guards both the AA pairs and the raw-color rule. Keep the slot names stable: update 2 presets must define every slot.
+- **Lime dropped as a leading color:** forest green with lime is a well-known fintech brand's signature. Leading with orange keeps Grove distinct.
+- **NO isn't red:** a NO verdict is a legitimate, useful answer ("not for me"), not an error. It's neutral `muted`; red is kept for destructive actions and Denied.
+- **`highlight` is fill-only:** `#f08952` is about 2.5:1 on white, below the 3:1 bar for meaningful graphics and far below 4.5:1 for text. It is used for bars and always paired with text; orange text uses `highlight-text`.
+- **MAYBE chip is outlined, not tinted:** the first treatment (`highlight` at 20% with `highlight-text`) measured about 4.4:1 on white and 3.9:1 on the page background, failing AA. The chip is now `surface` with a `highlight` border and `highlight-text` text, which reuses the already-asserted highlight-text/surface pair. The token check also covers the `muted-foreground` pairs used by NO chips.
+- **Explored count has no total:** no endpoint exposes the number of careers, and the backend is frozen. "n careers explored" counts reflections (abandons are invisible to students) and is hidden at 0. An "of N" total waits for update 3.
