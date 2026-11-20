@@ -21,6 +21,15 @@ export const TABS: { id: TabId; label: string }[] = [
 
 const time = (r: JourneyReflection) => (r.updatedAt ? Date.parse(r.updatedAt) || 0 : 0);
 
+const VERDICT_ORDER: JourneyVerdict[] = ["YES", "MAYBE", "NO"];
+
+/** Each verdict's count and share (0..1) of all verdicts. Zero-count verdicts are omitted; no reflections gives []. */
+export function verdictDistribution(counts: Record<JourneyVerdict, number>): { verdict: JourneyVerdict; count: number; share: number }[] {
+  const total = VERDICT_ORDER.reduce((n, v) => n + counts[v], 0);
+  if (total === 0) return [];
+  return VERDICT_ORDER.filter((v) => counts[v] > 0).map((v) => ({ verdict: v, count: counts[v], share: counts[v] / total }));
+}
+
 export function journeyModel<T extends JourneyReflection>(reflections: readonly T[]) {
   const counts: Record<JourneyVerdict, number> = { YES: 0, MAYBE: 0, NO: 0 };
   const sums = new Map<string, { sum: number; n: number }>();
@@ -45,6 +54,7 @@ export function journeyModel<T extends JourneyReflection>(reflections: readonly 
   return {
     total: reflections.length,
     counts,
+    distribution: verdictDistribution(counts),
     averages: [...sums].map(([key, s]) => ({ key, average: s.sum / s.n })),
     tab: (id: TabId): T[] => newestFirst.filter(matches[id]),
     /** For review mode (R4.5) and edit prefill (R5.4). */
