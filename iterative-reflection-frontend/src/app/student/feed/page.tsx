@@ -5,7 +5,8 @@ import { IntakePromptModal } from "@/components/intake/intake-prompt-modal";
 import { RetryPanel } from "@/components/shared/retry-panel";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { feedView } from "@/lib/feed/model";
+import { useReflectedCareers } from "@/lib/experience/queries";
+import { feedProgress, feedView } from "@/lib/feed/model";
 import { useFeed } from "@/lib/feed/queries";
 
 export default function Page() {
@@ -20,6 +21,39 @@ export default function Page() {
         <RetryPanel error={feed.error} onRetry={() => void feed.refetch()} />
       ) : (
         <FeedBody data={feed.data} />
+      )}
+      <FeedProgress />
+    </div>
+  );
+}
+
+/** Intake unlock progress and explored count. Renders nothing while the reflections query loads or fails. */
+function FeedProgress() {
+  const reflections = useReflectedCareers();
+  if (!reflections.data) return null;
+  const { intake, explored } = feedProgress(reflections.data.content.length);
+  if (!intake && !explored) return null;
+  return (
+    <div className="space-y-3" data-testid="feed-progress">
+      {intake && (
+        <div className="space-y-1.5" data-testid="intake-progress">
+          <p className="text-sm text-muted-foreground">{intake.label}</p>
+          <div
+            role="progressbar"
+            aria-label={intake.label}
+            aria-valuemin={0}
+            aria-valuemax={intake.max}
+            aria-valuenow={intake.current}
+            className="h-2 w-full overflow-hidden rounded-full bg-muted"
+          >
+            <div className="h-full rounded-full bg-highlight" style={{ width: `${(intake.current / intake.max) * 100}%` }} />
+          </div>
+        </div>
+      )}
+      {explored && (
+        <p className="text-sm font-medium" data-testid="explored-count">
+          {explored}
+        </p>
       )}
     </div>
   );

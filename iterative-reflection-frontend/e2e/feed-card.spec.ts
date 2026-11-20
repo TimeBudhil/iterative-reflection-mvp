@@ -57,3 +57,38 @@ test("exhausted shows the finished message and a link to My Journey", async ({ p
   await page.getByTestId("feed-exhausted").getByRole("link", { name: "My Journey" }).click();
   await expect(page).toHaveURL(/\/student\/journey$/);
 });
+
+test("intake progress and explored count follow the reflection count", async ({ page }) => {
+  const email = await freshStudent(page);
+  await signIn(page, email);
+  const intake = page.getByRole("progressbar", { name: /reflections until your interests form unlocks/ });
+  await expect(intake).toHaveAccessibleName("0 of 3 reflections until your interests form unlocks");
+  await expect(intake).toHaveAttribute("aria-valuenow", "0");
+  await expect(page.getByText(/careers? explored/)).toHaveCount(0);
+
+  const questions: { key: string }[] = await (await page.request.get("/api/reflection-questions")).json();
+  async function reflectOnFeedCard() {
+    const feed = await (await page.request.get("/api/feed/next")).json();
+    const id = feed.career.id as number;
+    const exp = await (await page.request.get(`/api/careers/${id}/experience`)).json();
+    const headers = { "X-XSRF-TOKEN": (await page.context().cookies()).find((c) => c.name === "XSRF-TOKEN")!.value };
+    for (let n = 1; n <= exp.lastPage; n++) {
+      expect((await page.request.post(`/api/careers/${id}/pages/${n}/viewed`, { headers })).status()).toBe(200);
+    }
+    const answers = Object.fromEntries(questions.map((q) => [q.key, { score: 5 }]));
+    const res = await page.request.post(`/api/careers/${id}/reflection`, { headers, data: { answers, verdict: "YES" } });
+    expect(res.status()).toBeLessThan(300);
+  }
+
+  await reflectOnFeedCard();
+  await page.reload();
+  await expect(page.getByRole("progressbar", { name: "1 of 3 reflections until your interests form unlocks" })).toHaveAttribute("aria-valuenow", "1");
+  await expect(page.getByText("1 career explored")).toBeVisible();
+
+  await reflectOnFeedCard();
+  await reflectOnFeedCard();
+  await page.reload();
+  await expect(page.getByText("3 careers explored")).toBeVisible();
+  await expect(page.getByRole("progressbar")).toHaveCount(0);
+  await expect(page.getByText(/reflections until your interests form unlocks/)).toHaveCount(0);
+});
