@@ -32,19 +32,19 @@ export default function Page() {
 function FeedProgress() {
   const reflections = useReflectedCareers();
   if (!reflections.data) return null;
-  const { intake, explored } = feedProgress(reflections.data.content.length);
-  if (!intake && !explored) return null;
+  const { intake, exploredLabel } = feedProgress(reflections.data.content.length);
+  if (!intake && !exploredLabel) return null;
   return (
     <div className="space-y-3" data-testid="feed-progress">
       {intake && (
         <div className="space-y-1.5" data-testid="intake-progress">
           <p className="text-sm text-muted-foreground">{intake.label}</p>
-          <ProgressBar value={intake.current} max={intake.max} label={intake.label} className="w-full" />
+          <ProgressBar fraction={intake.fraction} value={intake.current} max={intake.max} label={intake.label} className="w-full" />
         </div>
       )}
-      {explored && (
+      {exploredLabel && (
         <p className="text-sm font-medium" data-testid="explored-count">
-          {explored}
+          {exploredLabel}
         </p>
       )}
     </div>

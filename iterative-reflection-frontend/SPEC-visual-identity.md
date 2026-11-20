@@ -84,7 +84,7 @@ The only changes are visual and client-side. No backend changes, no new endpoint
 
 ### Color slots (the contract for updates 1 and 2)
 
-- **Named slots.** The theme layer defines these slots, mapped onto the existing shadcn CSS variables so the shadcn primitives keep working: `background`, `surface`, `foreground`, `muted`, `muted-foreground`, `border`, `primary`, `primary-foreground`, `highlight`, `highlight-text`, `positive`, `positive-foreground`, `destructive`, `ring`.
+- **Named slots.** The theme layer defines these slots, mapped onto the existing shadcn CSS variables so the shadcn primitives keep working: `background`, `surface`, `foreground`, `muted`, `muted-foreground`, `border`, `primary`, `primary-foreground`, `highlight`, `highlight-text`, `positive`, `positive-foreground`, `destructive`, `destructive-foreground`, `ring`.
 - **Grove palette values** (the default; the other presets come in update 2):
 
   | Slot | Value | Use |
@@ -99,7 +99,8 @@ The only changes are visual and client-side. No backend changes, no new endpoint
   | `positive` | `#D6E4E8` | YES chips, Active badges |
   | `positive-foreground` | `#163300` | text on positive |
   | `muted` / `muted-foreground` | neutral grays derived from the off-white family | NO verdict, secondary text |
-  | `destructive` | unchanged red | destructive actions and Denied badges only |
+  | `destructive` | red (`#e7000b`) | destructive actions and Denied badges only |
+  | `destructive-foreground` | `#ffffff` | text on destructive |
 
 - **Usage rules:**
   - Every screen is `background` with `surface` panels on top.

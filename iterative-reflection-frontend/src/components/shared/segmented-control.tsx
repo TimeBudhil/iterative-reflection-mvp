@@ -1,6 +1,7 @@
 "use client";
 
 import { useId } from "react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type SegmentedOption<T extends string | number> = {
@@ -20,7 +21,7 @@ export function SegmentedControl<T extends string | number>({
   disabled,
   describedBy,
   mode = "single",
-  selectedClassName,
+  singleSelectedClassName,
 }: {
   label: string;
   options: SegmentedOption<T>[];
@@ -30,8 +31,8 @@ export function SegmentedControl<T extends string | number>({
   describedBy?: string;
   /** "range" fills every segment up to the selected one; "single" (default) styles only the selected one. */
   mode?: "single" | "range";
-  /** Single mode only: classes for the selected option, e.g. from the shared verdict mapping. */
-  selectedClassName?: (value: T) => string;
+  /** Single mode only (ignored in range mode): fill classes for the selected option, e.g. from the shared verdict mapping. */
+  singleSelectedClassName?: (value: T) => string;
 }) {
   const name = useId();
   const selectedIndex = options.findIndex((o) => o.value === value);
@@ -48,9 +49,10 @@ export function SegmentedControl<T extends string | number>({
           mode === "range"
             ? selectedIndex >= 0 && i <= selectedIndex
             : selected;
+        const single = mode === "single";
         const filledClass =
-          mode === "single" && selectedClassName
-            ? selectedClassName(o.value)
+          single && singleSelectedClassName
+            ? singleSelectedClassName(o.value)
             : "border-primary bg-primary text-primary-foreground";
         return (
           <label
@@ -58,6 +60,8 @@ export function SegmentedControl<T extends string | number>({
             className={cn(
               "inline-flex h-9 min-w-9 cursor-pointer items-center justify-center rounded-md border px-3 text-sm font-medium has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
               filled ? filledClass : "bg-background hover:bg-accent",
+              // Single mode marks the choice without relying on fill color: a foreground outline (distinct from the focus ring) plus a check icon.
+              single && selected && "outline outline-2 outline-foreground",
               disabled && "pointer-events-none opacity-50",
             )}
           >
@@ -70,6 +74,7 @@ export function SegmentedControl<T extends string | number>({
               disabled={disabled}
               onChange={() => onChange(o.value)}
             />
+            {single && selected ? <Check aria-hidden="true" className="mr-1 size-4" /> : null}
             {o.label}
           </label>
         );

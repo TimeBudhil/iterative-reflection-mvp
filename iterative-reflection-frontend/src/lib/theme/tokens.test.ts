@@ -23,6 +23,7 @@ const SLOTS = [
   "positive",
   "positive-foreground",
   "destructive",
+  "destructive-foreground",
   "ring",
 ] as const;
 type Slot = (typeof SLOTS)[number];
@@ -40,7 +41,8 @@ const AA_PAIRS: [Slot, Slot][] = [
   ["highlight-text", "background"],
   ["highlight-text", "surface"],
   ["positive-foreground", "positive"],
-  // Verdict chips: YES = positive pair above, MAYBE = highlight-text on surface (outlined chip, not a tint), NO = muted pair.
+  ["destructive-foreground", "destructive"],
+  // Verdict chips: YES = positive pair above, MAYBE = highlight-text on a highlight tint (below), NO = muted pair.
   ["muted-foreground", "muted"],
   ["muted-foreground", "background"],
   ["muted-foreground", "surface"],
@@ -72,6 +74,16 @@ function luminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
+/** Composites `fg` at `alpha` over opaque `bg`; returns hex. */
+function blend(fg: string, bg: string, alpha: number): string {
+  const ch = (i: number) => {
+    const f = parseInt(fg.slice(i, i + 2), 16);
+    const b = parseInt(bg.slice(i, i + 2), 16);
+    return Math.round(f * alpha + b * (1 - alpha)).toString(16).padStart(2, "0");
+  };
+  return `#${ch(1)}${ch(3)}${ch(5)}`;
+}
+
 function contrast(a: string, b: string): number {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (hi + 0.05) / (lo + 0.05);
@@ -82,6 +94,18 @@ describe.each(PRESETS)("$name palette tokens", ({ selector }) => {
 
   it.each(AA_PAIRS)("%s on %s meets WCAG AA (4.5:1)", (fg, bg) => {
     expect(contrast(values[fg], values[bg])).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe.each(PRESETS)("$name MAYBE chip", ({ selector }) => {
+  const v = slotValues(selector);
+  // The chip paints highlight at 10% over an opaque surface layer (not over whatever is behind it).
+  it("highlight-text on the highlight tint over surface meets WCAG AA (4.5:1)", () => {
+    expect(contrast(v["highlight-text"], blend(v.highlight, v.surface, 0.1))).toBeGreaterThanOrEqual(4.5);
+  });
+  it("a selected verdict's ring (foreground) is a 3:1 indicator against background and surface", () => {
+    expect(contrast(v.foreground, v.background)).toBeGreaterThanOrEqual(3);
+    expect(contrast(v.foreground, v.surface)).toBeGreaterThanOrEqual(3);
   });
 });
 
@@ -138,5 +162,6 @@ describe("Grove values", () => {
     expect(v["highlight-text"].toLowerCase()).toBe("#a25a0e");
     expect(v.positive.toLowerCase()).toBe("#d6e4e8");
     expect(v["positive-foreground"].toLowerCase()).toBe("#163300");
+    expect(v["destructive-foreground"].toLowerCase()).toBe("#ffffff");
   });
 });

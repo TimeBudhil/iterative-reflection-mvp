@@ -32,15 +32,24 @@ test("fills the form with the keyboard, submits once on a double-click, lands on
   await page.keyboard.press("ArrowRight");
   await page.keyboard.press("ArrowRight");
   await expect(page.getByTestId("question-interest").getByRole("radio", { name: "3", exact: true })).toBeChecked();
+  await expect(first).not.toBeChecked(); // the selection moved, it did not add
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.getByTestId("question-interest").getByRole("radio", { name: "2", exact: true })).toBeChecked();
+  await page.keyboard.press("ArrowRight");
 
   for (const key of ["values", "lifestyle", "responsibilities", "sacrifices"]) {
     await page.getByTestId(`question-${key}`).getByText("7", { exact: true }).click();
+    await expect(page.getByTestId(`question-${key}`).getByRole("radio", { name: "7", exact: true })).toBeChecked();
   }
   await expect(submit).toBeDisabled(); // verdict missing
   await page.getByTestId("question-interest").locator("summary").click();
   await page.getByTestId("question-interest").getByRole("textbox").fill("hello");
   await expect(page.getByTestId("interest-counter")).toHaveText("5/1000");
-  await page.getByText("MAYBE", { exact: true }).click();
+  const verdict = page.getByRole("radiogroup", { name: "Would I genuinely enjoy this?" });
+  await expect(verdict.getByRole("radio", { checked: true })).toHaveCount(0);
+  await verdict.getByText("MAYBE", { exact: true }).click();
+  await expect(verdict.getByRole("radio", { name: "MAYBE" })).toBeChecked();
+  await expect(verdict.getByRole("radio", { name: "YES" })).not.toBeChecked();
   await expect(submit).toBeEnabled();
 
   await submit.dblclick();

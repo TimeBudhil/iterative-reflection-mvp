@@ -34,8 +34,8 @@ export function feedView(res: { career?: FeedCard | null; exhausted?: boolean })
 export const INTAKE_UNLOCK_THRESHOLD = 3;
 
 export type FeedProgress = {
-  intake: { label: string; current: number; max: number } | null;
-  explored: string | null;
+  intake: { label: string; current: number; max: number; fraction: number } | null;
+  exploredLabel: string | null;
 };
 
 /** Feed progress lines from the reflection count. Each is null (hidden) when it doesn't apply. */
@@ -48,8 +48,9 @@ export function feedProgress(reflectionCount: number): FeedProgress {
             label: `${n} of ${INTAKE_UNLOCK_THRESHOLD} reflections until your interests form unlocks`,
             current: n,
             max: INTAKE_UNLOCK_THRESHOLD,
+            fraction: n / INTAKE_UNLOCK_THRESHOLD,
           }
         : null,
-    explored: n >= 1 ? `${n} ${n === 1 ? "career" : "careers"} explored` : null,
+    exploredLabel: n >= 1 ? `${n} ${n === 1 ? "career" : "careers"} explored` : null,
   };
 }

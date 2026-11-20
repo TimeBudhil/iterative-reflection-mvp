@@ -31,22 +31,22 @@ describe("feedView", () => {
 describe("feedProgress", () => {
   it("0 reflections: intake line, no explored count", () => {
     expect(feedProgress(0)).toEqual({
-      intake: { label: "0 of 3 reflections until your interests form unlocks", current: 0, max: 3 },
-      explored: null,
+      intake: { label: "0 of 3 reflections until your interests form unlocks", current: 0, max: 3, fraction: 0 },
+      exploredLabel: null,
     });
   });
   it("1 reflection: singular explored count", () => {
     const p = feedProgress(1);
     expect(p.intake?.label).toBe("1 of 3 reflections until your interests form unlocks");
-    expect(p.explored).toBe("1 career explored");
+    expect(p.exploredLabel).toBe("1 career explored");
   });
   it("2 reflections: plural explored count", () => {
     const p = feedProgress(2);
-    expect(p.intake).toMatchObject({ current: 2, max: 3 });
-    expect(p.explored).toBe("2 careers explored");
+    expect(p.intake).toMatchObject({ current: 2, max: 3, fraction: 2 / 3 });
+    expect(p.exploredLabel).toBe("2 careers explored");
   });
   it("3 and 5 reflections: intake hidden", () => {
-    expect(feedProgress(3)).toEqual({ intake: null, explored: "3 careers explored" });
-    expect(feedProgress(5)).toEqual({ intake: null, explored: "5 careers explored" });
+    expect(feedProgress(3)).toEqual({ intake: null, exploredLabel: "3 careers explored" });
+    expect(feedProgress(5)).toEqual({ intake: null, exploredLabel: "5 careers explored" });
   });
 });

@@ -6,18 +6,15 @@ import { useQuery } from "@tanstack/react-query";
 import { statusCopy } from "@/lib/api/error-copy";
 import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
-import { barWidths, rangeFromParams, rangeToQuery, rangeToSearch, type VerdictCounts } from "@/lib/metrics/model";
+import { barWidths, rangeFromParams, rangeToQuery, rangeToSearch } from "@/lib/metrics/model";
+import { VERDICTS, type VerdictCounts } from "@/lib/verdict";
 import { verdictStyle } from "@/lib/theme/status-styles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const VERDICTS = [
-  { key: "YES", label: "Yes" },
-  { key: "MAYBE", label: "Maybe" },
-  { key: "NO", label: "No" },
-] as const;
+const VERDICT_LABELS = { YES: "Yes", MAYBE: "Maybe", NO: "No" } as const;
 
 export function MetricsView() {
   const router = useRouter();
@@ -81,12 +78,12 @@ export function MetricsView() {
             <CardContent>
               <ul aria-label="Verdict counts" className="space-y-3">
                 {VERDICTS.map((v) => (
-                  <li key={v.key} className="grid grid-cols-[4rem_1fr_3rem] items-center gap-3 text-sm">
-                    <span>{v.label}</span>
+                  <li key={v} className="grid grid-cols-[4rem_1fr_3rem] items-center gap-3 text-sm">
+                    <span>{VERDICT_LABELS[v]}</span>
                     <div className="h-6 rounded bg-muted" aria-hidden="true">
-                      <div className={`h-full rounded ${verdictStyle(v.key).bar}`} style={{ width: `${widths[v.key]}%` }} />
+                      <div className={`h-full rounded ${verdictStyle(v).bar}`} style={{ width: `${widths[v]}%` }} />
                     </div>
-                    <span className="text-right tabular-nums" data-testid={`verdict-${v.key}`}>{m ? verdicts[v.key] : "-"}</span>
+                    <span className="text-right tabular-nums" data-testid={`verdict-${v}`}>{m ? verdicts[v] : "-"}</span>
                   </li>
                 ))}
               </ul>
