@@ -51,6 +51,15 @@ describe("journeyModel", () => {
     expect(e.averages).toEqual([]);
     expect(e.tab("all")).toEqual([]);
   });
+  it("gives the verdict distribution, omitting zero counts", () => {
+    expect(m.distribution).toEqual([
+      { verdict: "YES", count: 2, share: 0.5 },
+      { verdict: "MAYBE", count: 1, share: 0.25 },
+      { verdict: "NO", count: 1, share: 0.25 },
+    ]);
+    expect(journeyModel([r(1, "NO", "2026-01-01T00:00:00Z"), r(2, "NO", "2026-01-02T00:00:00Z")]).distribution).toEqual([{ verdict: "NO", count: 2, share: 1 }]);
+    expect(journeyModel([]).distribution).toEqual([]);
+  });
   it("breaks equal timestamps by higher id first", () => {
     const t = journeyModel([r(1, "YES", "2026-01-01T00:00:00Z"), r(2, "YES", "2026-01-01T00:00:00Z")]);
     expect(t.tab("all").map((x) => x.id)).toEqual([2, 1]);

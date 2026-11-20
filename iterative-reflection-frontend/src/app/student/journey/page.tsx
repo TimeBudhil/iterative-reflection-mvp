@@ -35,6 +35,7 @@ function Journey({ reflections }: { reflections: ReflectionView[] }) {
         {model.averages.map((a) => (
           <Stat key={a.key} label={`Average ${dimensionLabel(a.key).toLowerCase()}`} value={formatAverage(a.average)} id={`avg-${a.key}`} />
         ))}
+        <VerdictBar distribution={model.distribution} />
       </section>
 
       <div role="tablist" aria-label="Filter careers" className="flex flex-wrap gap-1">
@@ -72,6 +73,26 @@ function Journey({ reflections }: { reflections: ReflectionView[] }) {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+function VerdictBar({ distribution }: { distribution: ReturnType<typeof journeyModel>["distribution"] }) {
+  const label = `Verdict split: ${distribution.map((d) => `${d.count} ${d.verdict}`).join(", ")}`;
+  return (
+    <div className="space-y-2 sm:col-span-2 lg:col-span-4" data-testid="verdict-bar">
+      <div role="img" aria-label={label} className="flex h-3 w-full overflow-hidden rounded-full">
+        {distribution.map((d) => (
+          <div key={d.verdict} data-testid={`verdict-segment-${d.verdict}`} style={{ width: `${d.share * 100}%` }} className={verdictStyle(d.verdict).bar} />
+        ))}
+      </div>
+      <ul className="flex flex-wrap gap-x-4 text-sm text-muted-foreground">
+        {distribution.map((d) => (
+          <li key={d.verdict} data-testid={`verdict-count-${d.verdict}`}>
+            {d.verdict}: {d.count}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
