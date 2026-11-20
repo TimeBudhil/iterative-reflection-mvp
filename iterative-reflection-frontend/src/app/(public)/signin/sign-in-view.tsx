@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Wordmark } from "@/components/shared/wordmark";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { postSignInPath } from "@/lib/session/model";
@@ -29,7 +30,7 @@ export function SignInView() {
     <main className="mx-auto flex min-h-screen max-w-md items-center p-4">
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="text-xl">Iterative Reflection</CardTitle>
+          <CardTitle className="text-xl"><Wordmark /></CardTitle>
         </CardHeader>
         <CardContent>
           {ready ? (
