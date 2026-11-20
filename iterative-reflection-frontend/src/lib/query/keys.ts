@@ -7,6 +7,7 @@ export const queryKeys = {
   adminCounselorsAll: ["admin", "counselors"] as const,
   adminCounselors: (page: number, size: number) => ["admin", "counselors", page, size] as const,
   adminAudit: (page: number, studentId: number | undefined) => ["admin", "audit", page, studentId ?? null] as const,
+  adminActivity: (page: number) => ["admin", "activity", page] as const,
   reflections: ["reflections"] as const,
   reflectionQuestions: ["reflection-questions"] as const,
   counselorMe: ["counselor", "me"] as const,
