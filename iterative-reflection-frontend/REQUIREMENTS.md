@@ -120,7 +120,7 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | R6.4 | Rows open the career | Clicking a row opens `/student/careers/[id]` in review mode (R4.5). Each row also has an "Edit reflection" action |
 | R6.5 | Empty state | With 0 reflections: "Reflect on your first career to see your journey here." with a link to the feed |
 
-| R6.6 | Verdict colors and bar | One shared mapping styles every verdict chip, bar and badge: YES `positive`, MAYBE an outlined `highlight` chip, NO neutral `muted` (red is reserved for destructive actions and Denied). The stat strip adds a horizontal bar with segment widths proportional to the YES / MAYBE / NO counts, with an accessible label listing them. The counts stay as text. One verdict kind renders a single full-width segment, and 0 reflections shows no bar |
+| R6.6 | Verdict colors and bar | One shared mapping styles every verdict chip, bar and badge: YES `positive`, MAYBE a `highlight` tint chip (painted over an opaque `surface`), NO neutral `muted` (red is reserved for destructive actions and Denied). The stat strip adds a horizontal bar with segment widths proportional to the YES / MAYBE / NO counts, with an accessible label listing them. The counts stay as text. One verdict kind renders a single full-width segment, and 0 reflections shows no bar |
 
 ### R7: Intake (`/student/intake`)
 

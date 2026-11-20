@@ -1,8 +1,7 @@
 /**
  * Pure reflection form model (R5.1, R5.2). Used to submit (ticket 12) and, given an `initial` value, to edit (ticket 14).
  */
-export type Verdict = "YES" | "MAYBE" | "NO";
-export const VERDICTS: Verdict[] = ["YES", "MAYBE", "NO"];
+import { isVerdict, type Verdict } from "@/lib/verdict";
 export const MAX_OPEN_TEXT = 1000;
 
 export type Question = { key: string; prompt: string; openPrompt: string; minScore: number; maxScore: number };
@@ -28,7 +27,7 @@ export function initialDraft(_questions: Question[], initial?: ExistingReflectio
     if (typeof a.score === "number") draft.scores[a.key] = a.score;
     if (a.openText) draft.texts[a.key] = a.openText;
   }
-  if (initial.verdict && (VERDICTS as string[]).includes(initial.verdict)) draft.verdict = initial.verdict as Verdict;
+  if (isVerdict(initial.verdict)) draft.verdict = initial.verdict;
   return draft;
 }
 

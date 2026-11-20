@@ -1,5 +1,5 @@
 export type DateRange = { from: string; to: string };
-export type VerdictCounts = { YES: number; MAYBE: number; NO: number };
+import type { VerdictCounts } from "@/lib/verdict";
 
 function validDate(s: string | null): string {
   if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return "";

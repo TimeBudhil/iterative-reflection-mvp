@@ -5,9 +5,10 @@ import Link from "next/link";
 import { QueryView } from "@/components/feedback/query-view";
 import { Card, CardContent } from "@/components/ui/card";
 import { useReflectedCareers, type ReflectionView } from "@/lib/experience/queries";
-import { dimensionLabel, formatAverage, journeyModel, TABS, type TabId } from "@/lib/journey/model";
-import { verdictStyle } from "@/lib/theme/status-styles";
+import { dimensionLabel, formatAverage, journeyModel, TABS, type TabId, type VerdictDistribution } from "@/lib/journey/model";
 import { cn } from "@/lib/utils";
+import { VerdictBadge } from "@/components/shared/verdict-badge";
+import { verdictStyle } from "@/lib/theme/status-styles";
 
 
 function Journey({ reflections }: { reflections: ReflectionView[] }) {
@@ -62,7 +63,7 @@ function Journey({ reflections }: { reflections: ReflectionView[] }) {
               <Link href={`/student/careers/${r.careerId}`} className="min-w-0 flex-1 font-medium underline-offset-2 hover:underline">
                 {r.careerTitle}
               </Link>
-              <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", verdictStyle(r.verdict).badge)}>{r.verdict}</span>
+              <VerdictBadge verdict={r.verdict} className="rounded-full" />
               <time dateTime={r.updatedAt} className="text-sm text-muted-foreground">
                 {r.updatedAt ? new Date(r.updatedAt).toLocaleDateString() : ""}
               </time>
@@ -77,18 +78,18 @@ function Journey({ reflections }: { reflections: ReflectionView[] }) {
   );
 }
 
-function VerdictBar({ distribution }: { distribution: ReturnType<typeof journeyModel>["distribution"] }) {
+function VerdictBar({ distribution }: { distribution: VerdictDistribution }) {
   const label = `Verdict split: ${distribution.map((d) => `${d.count} ${d.verdict}`).join(", ")}`;
   return (
-    <div className="space-y-2 sm:col-span-2 lg:col-span-4" data-testid="verdict-bar">
+    <div className="space-y-2 sm:col-span-2 lg:col-span-4">
       <div role="img" aria-label={label} className="flex h-3 w-full overflow-hidden rounded-full">
         {distribution.map((d) => (
-          <div key={d.verdict} data-testid={`verdict-segment-${d.verdict}`} style={{ width: `${d.share * 100}%` }} className={verdictStyle(d.verdict).bar} />
+          <div key={d.verdict} style={{ width: `${d.share * 100}%` }} className={verdictStyle(d.verdict).bar} />
         ))}
       </div>
       <ul className="flex flex-wrap gap-x-4 text-sm text-muted-foreground">
         {distribution.map((d) => (
-          <li key={d.verdict} data-testid={`verdict-count-${d.verdict}`}>
+          <li key={d.verdict}>
             {d.verdict}: {d.count}
           </li>
         ))}

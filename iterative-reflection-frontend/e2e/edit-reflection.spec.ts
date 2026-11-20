@@ -49,6 +49,9 @@ test("Edit reflection is prefilled, saves with PUT and returns to My Journey", a
   const newScore = before.answers[1].score === 10 ? 9 : 10;
   await page.getByTestId(`question-${key}`).getByText(String(newScore), { exact: true }).click();
   await page.getByText(newVerdict, { exact: true }).click();
+  await expect(page.getByTestId(`question-${key}`).getByRole("radio", { name: String(newScore), exact: true })).toBeChecked();
+  await expect(page.getByRole("radio", { name: newVerdict, exact: true })).toBeChecked();
+  await expect(page.getByRole("radio", { name: before.verdict, exact: true })).not.toBeChecked();
   const put = page.waitForRequest((r) => r.method() === "PUT" && r.url().endsWith(`/api/careers/${before.careerId}/reflection`));
   await page.getByRole("button", { name: "Save changes" }).click();
   await put;

@@ -117,7 +117,7 @@ test("a reflected career opens in review mode: free navigation, no reflect butto
   await expect(page.getByTestId("page-indicator")).toHaveText(/^Page 3 of/);
   const bar = page.getByRole("progressbar");
   await expect(bar).toHaveAttribute("aria-valuenow", "3");
-  await expect(bar).toHaveAttribute("aria-label", /^Page 3 of \d+$/);
+  await expect(bar).toHaveAccessibleName(/^Page 3 of \d+$/);
   await expect(page.getByRole("link", { name: "Reflect on this career" })).toHaveCount(0);
   expect(viewedCalls).toBe(0);
 });
