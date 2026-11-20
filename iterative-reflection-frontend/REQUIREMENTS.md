@@ -1,6 +1,6 @@
 # Iterative Reflection Frontend: Requirements
 
-_Last updated: 2026-11-18 (after the build: rows updated where the real backend differed)_
+_Last updated: 2026-11-20 (after update 1: visual identity)_
 
 > Codebase status: every in-scope requirement is built on `spec/frontend` (tickets 01–25). The compose rehearsal (R12.3–R12.5) is written but hasn't been run yet (it needs docker + mkcert). Decisions from the gap review are logged in `DECISIONS.md`. The backend in `../mvp` is **frozen**: this frontend must work with its 31 existing endpoints as they are. IDs like [B-R4.7] point to `../mvp/REQUIREMENTS.md`.
 
@@ -82,6 +82,8 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | R3.4 | Exhausted state | `{career: null, exhausted: true}` shows "You've explored every career." with a link to My Journey, not an error |
 | R3.5 | Intake prompt modal | When `/api/me` returns `intakePromptDue: true` on the feed, a modal offers "Fill it in" (→ `/student/intake`) and "Not now" (`POST /api/intake/dismiss`). After either choice the modal doesn't come back on reload |
 
+| R3.6 | Progress | While the student has fewer than 3 reflections, the card shows a progress bar and "n of 3 reflections" toward unlocking the intake, and the line goes away after the 3rd. Once n > 0 the feed shows "n career(s) explored" (n = reflections; hidden at 0). There is no "of N" total yet: no endpoint exposes the career count |
+
 ### R4: Career experience (`/student/careers/[id]`)
 
 | ID | Requirement | Acceptance criterion |
@@ -92,6 +94,8 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | R4.4 | Abandon | From page 1 on, an "This isn't for me" button opens a confirm dialog. Confirming calls `POST /api/careers/{id}/abandon` (204), then returns to `/student/feed`, where a new card appears |
 | R4.5 | Review mode for reflected careers | The experience response doesn't say whether a career is reflected on, so the page checks `GET /api/students/me/reflections` (shared TanStack Query cache) for its `careerId`. A reflected career shows every page with free navigation and no Abandon button, plus an "Edit reflection" button on every page. This works from My Journey and from a bookmarked URL alike |
 | R4.6 | Blocked careers | A 409 or 404 (the career isn't the in-progress card, isn't reflected on, or is retired) shows "This career isn't available right now." with a link to the feed |
+
+| R4.7 | Experience progress bar | A bar under the page header fills in proportion to "Page n of m" (n/m), on Next, Previous and in review mode. It has `role="progressbar"` with the current page and total, and the text indicator stays |
 
 ### R5: Reflection form (`/student/careers/[id]/reflect`)
 
@@ -104,6 +108,8 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | R5.5 | No double submit | The submit button is disabled while the request is pending, and a client-side lock blocks a second send. A double-click sends exactly one request. (The backend can't catch duplicates: a repeated POST returns its in-progress 409, not "already reflected") |
 | R5.6 | Stale or locked states | A 409 because the last page wasn't viewed sends the student back to the experience. Any other 409 on submit shows "not open for reflection" with a link to the feed. A 409 from a concurrent `PUT` (the backend's optimistic lock; requests carry no version, so stale tabs can't be detected) shows "Someone saved this reflection at the same time. Reload and try again." and refetches the reflection |
 
+| R5.7 | Filled scale and verdict control | The 1–10 scale fills segments 1 to n in `primary` and leaves the rest empty (native radios, so keyboard and form state are unchanged). The verdict control picks its selected color from the shared verdict mapping (R6.6) |
+
 ### R6: My Journey (`/student/journey`): Saved Careers + Progress
 
 | ID | Requirement | Acceptance criterion |
@@ -113,6 +119,8 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | R6.3 | "Saved" list = YES + MAYBE by default | Filter tabs are Saved (YES+MAYBE, default), YES, MAYBE, NO and All. Each row shows the career title, verdict badge and last-updated date, newest first |
 | R6.4 | Rows open the career | Clicking a row opens `/student/careers/[id]` in review mode (R4.5). Each row also has an "Edit reflection" action |
 | R6.5 | Empty state | With 0 reflections: "Reflect on your first career to see your journey here." with a link to the feed |
+
+| R6.6 | Verdict colors and bar | One shared mapping styles every verdict chip, bar and badge: YES `positive`, MAYBE an outlined `highlight` chip, NO neutral `muted` (red is reserved for destructive actions and Denied). The stat strip adds a horizontal bar with segment widths proportional to the YES / MAYBE / NO counts, with an accessible label listing them. The counts stay as text. One verdict kind renders a single full-width segment, and 0 reflections shows no bar |
 
 ### R7: Intake (`/student/intake`)
 
@@ -228,6 +236,7 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | N3.1 | WCAG 2.1 AA basics | `@axe-core/playwright` reports zero serious or critical violations on every page in the Page map |
 | N3.2 | Keyboard operable | Each role's e2e happy path (N6.2) also passes with keyboard only (Tab/Enter/Space/arrow keys), including the 1–10 scale and dialogs. Focus is visible and trapped inside open dialogs |
 | N3.3 | Labelled inputs and errors | Every input has a label. Field errors are tied to their input via `aria-describedby` and announced |
+| N3.4 | Color contrast | The slot pairs that carry text (foreground, primary-foreground, highlight-text, positive-foreground, muted-foreground on their grounds) meet 4.5:1, enforced by the token check (N6.5). `highlight` is fill-only and never text |
 
 ### N4: Compatibility
 
@@ -251,6 +260,11 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | N6.2 | E2E happy path per role | Playwright, against `./mvnw spring-boot:run` (dev) with the demo accounts (password `demo`). Every run signs up with a unique `e2e+<timestamp>@…` email, and `pnpm e2e:reset` deletes `../mvp/data` for a clean start. Includes one flow from a clean browser with no cookies (CSRF bootstrap, R11.3): a student signs up, reflects ×3, handles the intake modal, sees My Journey. A counselor views the student's detail. An admin creates a counselor, and that counselor's first sign-in forces a password change |
 | N6.3 | CI | A frontend job in the root `.github/workflows/ci.yml` (Node 24, pnpm through corepack) runs `pnpm lint`, `pnpm typecheck` and `pnpm test` on every push and PR. E2E and smoke run locally (they need the backend) |
 | N6.4 | Config by env | Public values are fixed at build time: `NEXT_PUBLIC_TERMS_VERSION` (default `2026-11-18`). `BACKEND_URL` (default `http://localhost:8080`) is only used by the dev rewrite. The production server needs no runtime env vars, and nothing is hard-coded per environment |
+| N6.5 | Color-slot rule and token check | Components and pages use only named color slots (`background`, `surface`, `foreground`, `muted`, `muted-foreground`, `border`, `primary`, `primary-foreground`, `highlight`, `highlight-text`, `positive`, `positive-foreground`, `destructive`, `ring`) and never raw values. Raw values live only in `globals.css`. A Vitest token check (`src/lib/theme/tokens.test.ts`) reads the slot values per preset, asserts WCAG AA on the text/ground pairs, and fails on hex, `rgb()`, `oklch()`, `hsl()` or Tailwind palette classes in source |
+
+### Look: Grove (update 1)
+
+The default palette is **Grove**: a warm off-white `background` with white `surface` panels, forest green `primary` (buttons, active nav, wordmark, filled scale), a single orange `highlight` used only as a fill, and a pale blue-gray `positive` for YES and Active. Cards have no border or shadow. Each screen has at most one `primary`-filled button. The "Iterative Reflection" wordmark (semibold Geist, `primary`) sits at the top of each portal shell and above the sign-in form. Font stays Geist only. Dark mode and other presets are not part of this update.
 
 _Skipped areas:_ reliability/availability (the frontend is a stateless, client-rendered Node server, so uptime belongs to hosting and the backend), scalability (300-student pilot, and the backend is the bottleneck), cost (no paid services; the real host is picked later, see Open Questions), data retention (the frontend stores no data, only the backend does).
 

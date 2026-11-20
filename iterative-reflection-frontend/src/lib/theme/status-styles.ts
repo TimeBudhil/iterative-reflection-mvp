@@ -1,9 +1,9 @@
 export type VerdictKey = "YES" | "MAYBE" | "NO";
 
-/** One mapping for verdict colors: YES positive, MAYBE highlight tint, NO muted. Slots only. */
+/** One mapping for verdict colors: YES positive, MAYBE outlined highlight chip (highlight-text on surface, AA), NO muted. Slots only. */
 const VERDICT: Record<VerdictKey, { badge: string; bar: string }> = {
   YES: { badge: "bg-positive text-positive-foreground", bar: "bg-positive border border-positive-foreground/40" },
-  MAYBE: { badge: "bg-highlight/20 text-highlight-text", bar: "bg-highlight" },
+  MAYBE: { badge: "bg-surface text-highlight-text border border-highlight", bar: "bg-highlight" },
   NO: { badge: "bg-muted text-muted-foreground", bar: "bg-muted border border-border" },
 };
 

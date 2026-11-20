@@ -40,6 +40,10 @@ const AA_PAIRS: [Slot, Slot][] = [
   ["highlight-text", "background"],
   ["highlight-text", "surface"],
   ["positive-foreground", "positive"],
+  // Verdict chips: YES = positive pair above, MAYBE = highlight-text on surface (outlined chip, not a tint), NO = muted pair.
+  ["muted-foreground", "muted"],
+  ["muted-foreground", "background"],
+  ["muted-foreground", "surface"],
 ];
 
 function blockFor(selector: string): string {
