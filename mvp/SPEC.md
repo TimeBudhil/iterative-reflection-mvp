@@ -187,7 +187,7 @@ Each module exposes a small public API (a service interface plus DTOs/events). E
 - **Reflections:** `GET /api/reflection-questions`, a submit/edit endpoint per career, `GET /api/students/me/reflections`, and version history per reflection.
 - **Intake:** `GET /api/intake/questions`, `POST /api/intake`, `PUT /api/intake`, `POST /api/intake/dismiss`.
 - **Counselor:** `GET /api/counselor/me`, `POST /api/counselor/me/join-code/rotate`, `GET /api/counselor/students`, `GET /api/counselor/students/{id}`.
-- **Admin:** `POST|GET /api/admin/counselors`, `PATCH /api/admin/counselors/{id}`, `GET /api/admin/pilot-metrics`, `GET /api/admin/audit`.
+- **Admin:** `POST|GET /api/admin/counselors`, `PATCH /api/admin/counselors/{id}`, `GET /api/admin/pilot-metrics`, `GET /api/admin/audit`, `GET /api/admin/activity`.
 - **Conventions:**
   - JSON bodies; errors as RFC 7807 problem+json with per-field errors and no internals [N3.1, N2.7].
   - Every list is pageable with `page`/`size` (default 20, max 100, clamped) and a defined default sort [N8].
