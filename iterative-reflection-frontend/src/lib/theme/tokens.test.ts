@@ -45,7 +45,7 @@ const AA_PAIRS: [Slot, Slot][] = [
   ["highlight-text", "background"],
   ["highlight-text", "surface"],
   ["positive-foreground", "positive"],
-  ["destructive-foreground", "destructive"],
+  ["destructive-foreground", "destructive"], // also the Denied outcome badge
   // Verdict chips: YES = positive pair above, MAYBE = highlight-text on a highlight tint (below), NO = muted pair.
   ["muted-foreground", "muted"],
   ["muted-foreground", "background"],
