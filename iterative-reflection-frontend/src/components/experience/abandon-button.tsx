@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useAbandonCareer } from "@/lib/experience/abandon";
-import { statusCopy } from "@/lib/api/error-copy";
+import { errorStatus, statusCopy } from "@/lib/api/error-copy";
 
 /** "This isn't for me" (R4.4): confirm, abandon, then back to the feed for a new card. */
 export function AbandonButton({ careerId }: { careerId: number }) {
@@ -32,7 +32,7 @@ export function AbandonButton({ careerId }: { careerId: number }) {
             onSuccess: () => router.push("/student/feed"),
             onError: (e) => {
               setOpen(false);
-              toast.error(statusCopy((e as { status?: number }).status ?? 0));
+              toast.error(statusCopy(errorStatus(e)));
             },
           })
         }

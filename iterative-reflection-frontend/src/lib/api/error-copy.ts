@@ -28,6 +28,12 @@ export function statusCopy(status: number): string {
   }
 }
 
+/** The HTTP status carried by a thrown error, or 0 (the "couldn't reach the server" copy) when it has none. */
+export function errorStatus(error: unknown): number {
+  const status = (error as { status?: unknown } | null)?.status;
+  return typeof status === "number" ? status : 0;
+}
+
 /** Whether an error deserves the retry panel: a 5xx or a network failure (status 0). */
 export function isRetryable(error: unknown): boolean {
   const status = (error as { status?: unknown } | null)?.status;

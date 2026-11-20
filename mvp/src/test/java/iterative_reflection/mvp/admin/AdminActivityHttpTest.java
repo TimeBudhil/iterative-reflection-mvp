@@ -69,7 +69,7 @@ class AdminActivityHttpTest extends HttpIntegrationTest {
 				.jsonPath("$.content[0].action").isEqualTo("COUNSELOR_REACTIVATED")
 				.jsonPath("$.content[0].detail.email").isEqualTo(email)
 				.jsonPath("$.content[0].adminName").isEqualTo("Test User")
-				.jsonPath("$.content[0].createdAt").isNotEmpty()
+				.jsonPath("$.content[0].createdAt").isNotEmpty().jsonPath("$.content[0].id").isNumber()
 				.jsonPath("$.content[1].action").isEqualTo("COUNSELOR_DEACTIVATED")
 				.jsonPath("$.content[1].detail.email").isEqualTo(email)
 				.jsonPath("$.content[2].action").isEqualTo("COUNSELOR_CREATED")

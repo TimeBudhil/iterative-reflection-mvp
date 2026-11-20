@@ -69,7 +69,7 @@ public class AdminCounselorController {
 		UserSummary user = users.createCounselor(request.email(), request.displayName(),
 				request.temporaryPassword());
 		String code = counselors.createProfile(user.id()).joinCode();
-		activity.recordAfterCommit(me.id(), AdminActivity.COUNSELOR_CREATED, Map.of("email", user.email()));
+		activity.recordAfterCommit(me.id(), AdminActivity.Action.COUNSELOR_CREATED, Map.of("email", user.email()));
 		return new CounselorResponse(user.id(), user.email(), user.displayName(), code, user.active(),
 				user.mustChangePassword());
 	}
@@ -97,7 +97,7 @@ public class AdminCounselorController {
 		UserSummary user = users.setActive(existing.id(), request.active());
 		if (existing.active() != request.active()) {
 			activity.recordAfterCommit(me.id(),
-					request.active() ? AdminActivity.COUNSELOR_REACTIVATED : AdminActivity.COUNSELOR_DEACTIVATED,
+					request.active() ? AdminActivity.Action.COUNSELOR_REACTIVATED : AdminActivity.Action.COUNSELOR_DEACTIVATED,
 					Map.of("email", user.email()));
 		}
 		String code = counselors.findByUserId(id).map(p -> p.joinCode()).orElse(null);

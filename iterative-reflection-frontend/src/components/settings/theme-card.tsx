@@ -6,12 +6,15 @@ import { QueryView } from "@/components/feedback/query-view";
 import { VerdictBadge } from "@/components/shared/verdict-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { statusCopy } from "@/lib/api/error-copy";
+import { errorStatus, statusCopy } from "@/lib/api/error-copy";
+import type { components } from "@/lib/api/schema";
 import { cn } from "@/lib/utils";
 import { useAdminTheme, useSaveTheme } from "@/lib/theme/admin-theme";
 import { resolvePresetId, type PresetId } from "@/lib/theme/presets";
 import { canSaveTheme, lastChangedLine, PRESET_OPTIONS } from "@/lib/theme/theme-card-model";
 import { SettingsCard } from "./settings-card";
+
+type AdminTheme = components["schemas"]["AdminThemeResponse"];
 
 const SWATCH_SLOTS = ["bg-background", "bg-primary", "bg-highlight", "bg-positive"] as const;
 
@@ -43,13 +46,14 @@ function MockCard({ presetId }: { presetId: PresetId }) {
   );
 }
 
-function ThemeForm({ saved, updatedAt, updatedByName }: { saved: PresetId; updatedAt?: string | null; updatedByName?: string | null }) {
+function ThemeForm({ theme }: { theme: AdminTheme }) {
+  const saved = resolvePresetId(theme.presetId);
   const save = useSaveTheme();
   // The radio shows the saved preset until the admin picks another; success and failure both drop the pick.
   const [picked, setPicked] = useState<PresetId | null>(null);
   const selected = picked ?? saved;
   const enabled = canSaveTheme(selected, saved, save.isPending);
-  const line = lastChangedLine(updatedAt, updatedByName);
+  const line = lastChangedLine(theme.updatedAt, theme.updatedByName);
 
   return (
     <form
@@ -65,7 +69,7 @@ function ThemeForm({ saved, updatedAt, updatedByName }: { saved: PresetId; updat
           },
           onError: (err) => {
             setPicked(null);
-            toast.error(statusCopy((err as { status?: number }).status ?? 0));
+            toast.error(statusCopy(errorStatus(err)));
           },
         });
       }}
@@ -117,7 +121,7 @@ export function ThemeCard() {
   return (
     <SettingsCard id="app-theme" title="App theme" description="Choose the look of the app for everyone. Changes show on each person's next page load.">
       <QueryView query={theme}>
-        {(t) => <ThemeForm saved={resolvePresetId(t.presetId)} updatedAt={t.updatedAt} updatedByName={t.updatedByName} />}
+        {(t) => <ThemeForm theme={t} />}
       </QueryView>
     </SettingsCard>
   );

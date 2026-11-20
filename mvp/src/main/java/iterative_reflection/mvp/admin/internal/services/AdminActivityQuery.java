@@ -2,8 +2,6 @@ package iterative_reflection.mvp.admin.internal.services;
 
 import iterative_reflection.mvp.admin.internal.dto.ActivityEntry;
 import iterative_reflection.mvp.admin.internal.repository.AdminActivityReader;
-import iterative_reflection.mvp.identity.UserService;
-import iterative_reflection.mvp.identity.UserSummary;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,13 +20,13 @@ public class AdminActivityQuery {
 
 	private final AdminActivityReader reader;
 
-	private final UserService users;
+	private final AdminNames names;
 
 	private final JsonMapper json;
 
-	AdminActivityQuery(AdminActivityReader reader, UserService users, JsonMapper json) {
+	AdminActivityQuery(AdminActivityReader reader, AdminNames names, JsonMapper json) {
 		this.reader = reader;
-		this.users = users;
+		this.names = names;
 		this.json = json;
 	}
 
@@ -36,9 +34,9 @@ public class AdminActivityQuery {
 	public Page<ActivityEntry> page(Pageable pageable) {
 		List<AdminActivityReader.Row> rows = reader.find(pageable);
 		Set<Long> ids = rows.stream().map(AdminActivityReader.Row::adminId).collect(Collectors.toSet());
-		Map<Long, UserSummary> admins = users.findByIds(ids);
-		List<ActivityEntry> content = rows.stream().map(r -> new ActivityEntry(r.createdAt(),
-				admins.containsKey(r.adminId()) ? admins.get(r.adminId()).displayName() : null, r.action(),
+		Map<Long, String> admins = names.namesOf(ids);
+		List<ActivityEntry> content = rows.stream().map(r -> new ActivityEntry(r.id(), r.createdAt(),
+				admins.get(r.adminId()), r.action(),
 				json.readValue(r.detailJson(), new TypeReference<Map<String, String>>() {
 				}))).toList();
 		return new PageImpl<>(content, pageable, reader.count());

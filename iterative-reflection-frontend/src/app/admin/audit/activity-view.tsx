@@ -23,7 +23,7 @@ export function ActivityView() {
     <PaginatedTable
       label="Admin activity"
       columns={columns}
-      rowKey={(r) => `${r.createdAt}-${r.action}-${JSON.stringify(r.detail)}`}
+      rowKey={(r) => r.id!}
       query={activity}
       page={page}
       onPageChange={setPage}

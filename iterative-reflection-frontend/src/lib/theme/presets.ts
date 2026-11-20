@@ -2,6 +2,14 @@
 export const PRESET_IDS = ["grove", "harbor", "plum", "slate"] as const;
 export type PresetId = (typeof PRESET_IDS)[number];
 
+/** Display names for the presets (radio labels, activity text). */
+export const PRESET_NAMES: Record<PresetId, string> = {
+  grove: "Grove",
+  harbor: "Harbor",
+  plum: "Plum",
+  slate: "Slate",
+};
+
 export const DEFAULT_PRESET_ID: PresetId = "grove";
 
 export function isPresetId(value: unknown): value is PresetId {

@@ -19,13 +19,12 @@ import tools.jackson.databind.json.JsonMapper;
 @Service
 public class AdminActivity {
 
-	public static final String THEME_CHANGED = "THEME_CHANGED";
+	/** The kinds of admin action the log records; the name is what is stored and returned by the API. */
+	public enum Action {
 
-	public static final String COUNSELOR_CREATED = "COUNSELOR_CREATED";
+		THEME_CHANGED, COUNSELOR_CREATED, COUNSELOR_DEACTIVATED, COUNSELOR_REACTIVATED
 
-	public static final String COUNSELOR_DEACTIVATED = "COUNSELOR_DEACTIVATED";
-
-	public static final String COUNSELOR_REACTIVATED = "COUNSELOR_REACTIVATED";
+	}
 
 	private static final Logger log = LoggerFactory.getLogger(AdminActivity.class);
 
@@ -42,9 +41,9 @@ public class AdminActivity {
 	}
 
 	/** Writes now, in its own transaction. */
-	public void record(long adminId, String action, Map<String, String> detail) {
+	public void record(long adminId, Action action, Map<String, String> detail) {
 		try {
-			writer.insert(adminId, action, json.writeValueAsString(detail), clock.instant());
+			writer.insert(adminId, action.name(), json.writeValueAsString(detail), clock.instant());
 		}
 		catch (RuntimeException e) {
 			log.warn("Admin activity write failed (action={}, requestId={}); the action itself is unaffected", action,
@@ -53,7 +52,7 @@ public class AdminActivity {
 	}
 
 	/** Writes after the surrounding transaction commits, so a rolled-back action leaves no row. */
-	public void recordAfterCommit(long adminId, String action, Map<String, String> detail) {
+	public void recordAfterCommit(long adminId, Action action, Map<String, String> detail) {
 		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
 			record(adminId, action, detail);
 			return;
