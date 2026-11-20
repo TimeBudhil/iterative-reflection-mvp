@@ -4,6 +4,7 @@ import Link from "next/link";
 import { IntakePromptModal } from "@/components/intake/intake-prompt-modal";
 import { RetryPanel } from "@/components/shared/retry-panel";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useReflectedCareers } from "@/lib/experience/queries";
 import { feedProgress, feedView } from "@/lib/feed/model";
@@ -38,16 +39,7 @@ function FeedProgress() {
       {intake && (
         <div className="space-y-1.5" data-testid="intake-progress">
           <p className="text-sm text-muted-foreground">{intake.label}</p>
-          <div
-            role="progressbar"
-            aria-label={intake.label}
-            aria-valuemin={0}
-            aria-valuemax={intake.max}
-            aria-valuenow={intake.current}
-            className="h-2 w-full overflow-hidden rounded-full bg-muted"
-          >
-            <div className="h-full rounded-full bg-highlight" style={{ width: `${(intake.current / intake.max) * 100}%` }} />
-          </div>
+          <ProgressBar value={intake.current} max={intake.max} label={intake.label} className="w-full" />
         </div>
       )}
       {explored && (
