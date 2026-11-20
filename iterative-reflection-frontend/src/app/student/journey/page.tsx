@@ -6,13 +6,9 @@ import { QueryView } from "@/components/feedback/query-view";
 import { Card, CardContent } from "@/components/ui/card";
 import { useReflectedCareers, type ReflectionView } from "@/lib/experience/queries";
 import { dimensionLabel, formatAverage, journeyModel, TABS, type TabId } from "@/lib/journey/model";
+import { verdictStyle } from "@/lib/theme/status-styles";
 import { cn } from "@/lib/utils";
 
-const BADGE: Record<string, string> = {
-  YES: "bg-green-100 text-green-900",
-  MAYBE: "bg-amber-100 text-amber-900",
-  NO: "bg-red-100 text-red-900",
-};
 
 function Journey({ reflections }: { reflections: ReflectionView[] }) {
   const model = useMemo(() => journeyModel(reflections), [reflections]);
@@ -65,7 +61,7 @@ function Journey({ reflections }: { reflections: ReflectionView[] }) {
               <Link href={`/student/careers/${r.careerId}`} className="min-w-0 flex-1 font-medium underline-offset-2 hover:underline">
                 {r.careerTitle}
               </Link>
-              <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", BADGE[r.verdict ?? ""])}>{r.verdict}</span>
+              <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", verdictStyle(r.verdict).badge)}>{r.verdict}</span>
               <time dateTime={r.updatedAt} className="text-sm text-muted-foreground">
                 {r.updatedAt ? new Date(r.updatedAt).toLocaleDateString() : ""}
               </time>

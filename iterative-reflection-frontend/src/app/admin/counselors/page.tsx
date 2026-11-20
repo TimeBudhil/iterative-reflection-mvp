@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
+import { activeBadge } from "@/lib/theme/status-styles";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +35,7 @@ function StatusBadge({ active }: { active: boolean }) {
     <span
       className={
         "inline-flex rounded-full px-2 py-0.5 text-xs font-medium " +
-        (active ? "bg-emerald-100 text-emerald-900" : "bg-muted text-muted-foreground")
+        activeBadge(active)
       }
     >
       {active ? "Active" : "Inactive"}
