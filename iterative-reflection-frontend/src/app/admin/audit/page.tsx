@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PaginatedTable, type Column } from "@/components/shared/paginated-table";
+import { outcomeBadge } from "@/lib/theme/status-styles";
 import { useAuditLog } from "@/lib/admin/audit";
 import { counselorLabel, outcomeLabel, parseStudentIdFilter } from "@/lib/admin/audit-model";
 import { counselorNameMap } from "@/lib/admin/counselor-model";
@@ -19,7 +20,7 @@ function OutcomeBadge({ outcome }: { outcome?: string }) {
     <span
       className={
         "inline-flex rounded-full px-2 py-0.5 text-xs font-medium " +
-        (allowed ? "bg-emerald-100 text-emerald-900" : "bg-red-100 text-red-900")
+        outcomeBadge(allowed)
       }
     >
       {outcomeLabel(outcome)}
