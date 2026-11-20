@@ -31,6 +31,10 @@ type Slot = (typeof SLOTS)[number];
 /** Each preset is a selector whose block defines the slot values. Update 2 adds [data-theme] entries. */
 const PRESETS: { name: string; selector: string }[] = [
   { name: "grove", selector: ":root" },
+  { name: "grove (by name)", selector: '[data-theme="grove"]' },
+  { name: "harbor", selector: '[data-theme="harbor"]' },
+  { name: "plum", selector: '[data-theme="plum"]' },
+  { name: "slate", selector: '[data-theme="slate"]' },
 ];
 
 /** Pairs (text, ground) that must reach WCAG AA for normal text. */
@@ -50,7 +54,7 @@ const AA_PAIRS: [Slot, Slot][] = [
 
 function blockFor(selector: string): string {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`).exec(css);
+  const match = new RegExp(`(?:^|\\n)(?:[^{}]*,\\s*)?${escaped}\\s*(?:,[^{}]*)?\\{([^}]*)\\}`).exec(css);
   if (!match) throw new Error(`No ${selector} block in globals.css`);
   return match[1];
 }

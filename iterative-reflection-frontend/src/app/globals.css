@@ -3,8 +3,9 @@
 
 @custom-variant dark (&:is(.dark *));
 
-:root {
-  /* Grove slots: the single place palette values live. A [data-theme] block can override these. */
+:root,
+[data-theme="grove"] {
+  /* Grove slots (default, also selectable by name). Palette values live only in this file. */
   --background: #edefeb;
   --surface: #ffffff;
   --foreground: #121511;
@@ -30,6 +31,60 @@
   --accent-foreground: var(--foreground);
   --input: var(--border);
   --radius: 0.625rem;
+}
+
+[data-theme="harbor"] {
+  --surface: #ffffff;
+  --background: #ebeff1;
+  --foreground: #10181d;
+  --muted: #dfe5e8;
+  --muted-foreground: #4f5d65;
+  --border: #ced7dc;
+  --primary: #12344d;
+  --primary-foreground: #ffffff;
+  --highlight: #3aa99f;
+  --highlight-text: #17716a;
+  --positive: #efe5d2;
+  --positive-foreground: #12344d;
+  --destructive: #e7000b;
+  --destructive-foreground: #ffffff;
+  --ring: #12344d;
+}
+
+[data-theme="plum"] {
+  --surface: #ffffff;
+  --background: #f1edf0;
+  --foreground: #1a1219;
+  --muted: #e7e0e5;
+  --muted-foreground: #5e5260;
+  --border: #dacfd7;
+  --primary: #4a1f4f;
+  --primary-foreground: #ffffff;
+  --highlight: #6bb39b;
+  --highlight-text: #2f7360;
+  --positive: #e4e0ef;
+  --positive-foreground: #4a1f4f;
+  --destructive: #e7000b;
+  --destructive-foreground: #ffffff;
+  --ring: #4a1f4f;
+}
+
+[data-theme="slate"] {
+  --surface: #ffffff;
+  --background: #eeeff1;
+  --foreground: #15171a;
+  --muted: #e2e4e7;
+  --muted-foreground: #555a61;
+  --border: #d2d5da;
+  --primary: #2b3038;
+  --primary-foreground: #ffffff;
+  --highlight: #6f9fd8;
+  --highlight-text: #2f5f9a;
+  --positive: #dfe8df;
+  --positive-foreground: #2b3038;
+  --destructive: #e7000b;
+  --destructive-foreground: #ffffff;
+  --ring: #2b3038;
 }
 
 @theme inline {

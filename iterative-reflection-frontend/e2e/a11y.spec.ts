@@ -83,6 +83,36 @@ test.describe("counselor pages", () => {
   });
 });
 
+// R13.1 / N3.4: every theme preset, forced on <html>, passes the axe scan on a public, a student and an admin page.
+for (const preset of ["grove", "harbor", "plum", "slate"]) {
+  test.describe(`preset ${preset}`, () => {
+    async function force(page: Page) {
+      await page.evaluate((id) => document.documentElement.setAttribute("data-theme", id), preset);
+    }
+
+    test("signin", async ({ page }) => {
+      await page.goto("/signin");
+      await force(page);
+      await expectAccessible(page, `/signin [${preset}]`);
+    });
+
+    test("student feed", async ({ page }) => {
+      const s = await seedLinkedStudent({ reflections: 3, abandon: false, intake: true });
+      await signIn(page, s.email, s.password);
+      await expect(page).toHaveURL(/\/student\/feed$/);
+      await force(page);
+      await expectAccessible(page, `/student/feed [${preset}]`);
+    });
+
+    test("admin settings", async ({ page }) => {
+      await signIn(page, "admin@demo.example", "demo");
+      await page.goto("/admin/settings");
+      await force(page);
+      await expectAccessible(page, `/admin/settings [${preset}]`);
+    });
+  });
+}
+
 test.describe("admin pages", () => {
   test("every admin page and the add-counselor dialog", async ({ page }) => {
     await signIn(page, "admin@demo.example", "demo");
