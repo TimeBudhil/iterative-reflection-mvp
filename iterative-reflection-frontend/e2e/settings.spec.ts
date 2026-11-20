@@ -169,9 +169,11 @@ test.describe("app theme card", () => {
     );
     const card = page.locator("#app-theme");
     await card.getByRole("radio", { name: "Plum" }).check();
-    await card.getByRole("button", { name: "Save" }).click();
+    const save = card.getByRole("button", { name: "Save" });
+    await save.click();
     await expect(page.getByText("Something went wrong on our side. Please try again.")).toBeVisible();
     await expect(card.getByRole("radio", { name: "Grove" })).toBeChecked();
+    await expect(save).toBeFocused();
     await expect(html(page)).toHaveAttribute("data-theme", "grove");
   });
 });

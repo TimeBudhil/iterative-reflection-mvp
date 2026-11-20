@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { canSaveTheme, lastChangedLine, PRESET_NAMES, PRESET_OPTIONS } from "./theme-card-model";
+import { PRESET_NAMES } from "./presets";
+import { canSaveTheme, lastChangedLine, PRESET_OPTIONS } from "./theme-card-model";
 
 describe("PRESET_OPTIONS", () => {
   it("offers the four presets by display name, Grove first", () => {

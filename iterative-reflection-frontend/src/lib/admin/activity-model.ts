@@ -1,6 +1,5 @@
 /** Pure helpers for the admin activity tab (R13.9). */
-import { PRESET_NAMES } from "@/lib/theme/theme-card-model";
-import { isPresetId } from "@/lib/theme/presets";
+import { isPresetId, PRESET_NAMES } from "@/lib/theme/presets";
 
 export type ActivityTab = "views" | "activity";
 
@@ -18,34 +17,26 @@ export function tabToSearch(tab: ActivityTab, current: URLSearchParams | string 
   return s ? `?${s}` : "";
 }
 
-const ACTION_LABELS: Record<string, string> = {
-  THEME_CHANGED: "Theme changed",
-  COUNSELOR_CREATED: "Counselor created",
-  COUNSELOR_DEACTIVATED: "Counselor deactivated",
-  COUNSELOR_REACTIVATED: "Counselor reactivated",
-};
-
-export function actionLabel(action: string | undefined): string {
-  return (action && ACTION_LABELS[action]) || action || "–";
-}
+type Detail = { [key: string]: string };
 
 function presetName(id: string | undefined): string {
   return isPresetId(id) ? PRESET_NAMES[id] : (id ?? "?");
 }
 
-/** "Theme: Grove → Harbor", "Created counselor <email>", and so on. */
-export function detailText(action: string | undefined, detail: { [key: string]: string } | undefined): string {
+/** Per action: the tab's label and the one-line detail ("Theme: Grove → Harbor", "Created counselor <email>"). */
+const ACTIONS: Record<string, { label: string; detail: (d: Detail) => string }> = {
+  THEME_CHANGED: { label: "Theme changed", detail: (d) => `Theme: ${presetName(d.from)} → ${presetName(d.to)}` },
+  COUNSELOR_CREATED: { label: "Counselor created", detail: (d) => `Created counselor ${d.email ?? "?"}` },
+  COUNSELOR_DEACTIVATED: { label: "Counselor deactivated", detail: (d) => `Deactivated counselor ${d.email ?? "?"}` },
+  COUNSELOR_REACTIVATED: { label: "Counselor reactivated", detail: (d) => `Reactivated counselor ${d.email ?? "?"}` },
+};
+
+export function actionLabel(action: string | undefined): string {
+  return (action && ACTIONS[action]?.label) || action || "–";
+}
+
+export function detailText(action: string | undefined, detail: Detail | undefined): string {
   const d = detail ?? {};
-  switch (action) {
-    case "THEME_CHANGED":
-      return `Theme: ${presetName(d.from)} → ${presetName(d.to)}`;
-    case "COUNSELOR_CREATED":
-      return `Created counselor ${d.email ?? "?"}`;
-    case "COUNSELOR_DEACTIVATED":
-      return `Deactivated counselor ${d.email ?? "?"}`;
-    case "COUNSELOR_REACTIVATED":
-      return `Reactivated counselor ${d.email ?? "?"}`;
-    default:
-      return Object.values(d).join(", ") || "–";
-  }
+  const known = action ? ACTIONS[action] : undefined;
+  return known ? known.detail(d) : Object.values(d).join(", ") || "–";
 }

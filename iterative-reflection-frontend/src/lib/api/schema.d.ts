@@ -825,6 +825,8 @@ export interface components {
             page: components["schemas"]["PageMetadata"];
         };
         ActivityEntry: {
+            /** Format: int64 */
+            id?: number;
             /** Format: date-time */
             createdAt?: string;
             adminName?: string;

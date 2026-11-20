@@ -1,12 +1,4 @@
-import { PRESET_IDS, type PresetId } from "./presets";
-
-/** Display names for the preset radios (the accessible name of each option). */
-export const PRESET_NAMES: Record<PresetId, string> = {
-  grove: "Grove",
-  harbor: "Harbor",
-  plum: "Plum",
-  slate: "Slate",
-};
+import { PRESET_IDS, PRESET_NAMES, type PresetId } from "./presets";
 
 export const PRESET_OPTIONS = PRESET_IDS.map((id) => ({ id, name: PRESET_NAMES[id] }));
 
