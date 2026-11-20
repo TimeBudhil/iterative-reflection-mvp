@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronsUpDown, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Wordmark } from "@/components/shared/wordmark";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
@@ -21,7 +22,7 @@ import { useSignOut, type Me } from "@/lib/session/session";
 function PortalSkeleton() {
   return (
     <div className="flex min-h-screen" aria-busy="true" aria-label="Loading">
-      <div className="w-60 shrink-0 space-y-3 border-r p-4">
+      <div className="w-60 shrink-0 space-y-3 bg-surface p-4">
         <Skeleton className="h-6 w-32" />
         <Skeleton className="h-8 w-full" />
         <Skeleton className="h-8 w-full" />
@@ -63,9 +64,9 @@ function Shell({ me, children }: { me: Me; children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div className="flex min-h-screen flex-col xl:flex-row">
-      <aside className="flex shrink-0 flex-col border-b p-3 xl:w-60 xl:border-r xl:border-b-0">
+      <aside className="flex shrink-0 flex-col bg-surface p-3 xl:w-60">
         <div className="flex items-center justify-between">
-          <div className="px-3 py-2 text-base font-semibold">Iterative Reflection</div>
+          <Wordmark className="px-3 py-2 text-base" />
           <button
             type="button"
             className="rounded-md p-2 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring xl:hidden"
@@ -90,7 +91,7 @@ function Shell({ me, children }: { me: Me; children: React.ReactNode }) {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "rounded-md px-3 py-2 text-sm hover:bg-accent",
-                  active && "bg-accent font-medium text-accent-foreground",
+                  active && "bg-primary font-medium text-primary-foreground hover:bg-primary",
                 )}
               >
                 {item.label}
