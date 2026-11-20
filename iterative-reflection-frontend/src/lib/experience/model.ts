@@ -33,6 +33,7 @@ export function startPage(mode: ViewerMode, e: { lastViewedPage?: number; lastPa
 
 export function viewerState(mode: ViewerMode, page: number, lastPage: number) {
   return {
+    progress: clampPage(page, lastPage) / Math.max(lastPage, 1),
     label: `Page ${page} of ${lastPage}`,
     hasPrev: page > 1,
     hasNext: page < lastPage,
