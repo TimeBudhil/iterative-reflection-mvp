@@ -228,6 +228,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings/theme": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["theme"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reflection-questions": {
         parameters: {
             query?: never;
@@ -570,6 +586,9 @@ export interface components {
         PagedModelCounselorLink: {
             content: components["schemas"]["CounselorLink"][];
             page: components["schemas"]["PageMetadata"];
+        };
+        ThemeResponse: {
+            presetId?: string;
         };
         QuestionView: {
             /** Format: int64 */
@@ -1226,6 +1245,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PagedModelReflectionView"];
+                };
+            };
+        };
+    };
+    theme: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ThemeResponse"];
                 };
             };
         };
