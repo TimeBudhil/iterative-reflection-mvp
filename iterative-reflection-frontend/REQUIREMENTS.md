@@ -1,15 +1,18 @@
 # Iterative Reflection Frontend: Requirements
 
-_Last updated: 2026-11-20 (after update 1: visual identity)_
+_Last updated: 2026-11-20 (added R13: admin-selectable theme presets, update 2)_
 
-> Codebase status: every in-scope requirement is built on `spec/frontend` (tickets 01–25). The compose rehearsal (R12.3–R12.5) is written but hasn't been run yet (it needs docker + mkcert). Decisions from the gap review are logged in `DECISIONS.md`. The backend in `../mvp` is **frozen**: this frontend must work with its 31 existing endpoints as they are. IDs like [B-R4.7] point to `../mvp/REQUIREMENTS.md`.
+> Codebase status: R1–R12 are built on `spec/frontend` (tickets 01–25) and update 1 (visual identity) is merged. The compose rehearsal (R12.3–R12.5) and CI (N6.3) are written but unverified; R13.10 verifies them in the update 2 PR. Decisions from the gap review are logged in `DECISIONS.md`. R1–R12 work with the backend's 31 original endpoints as they are. R13 depends on the backend addition B-R11 (settings + admin activity); the backend is otherwise still frozen. IDs like [B-R4.7] point to `../mvp/REQUIREMENTS.md`.
+>
+> **Delivery order:** update 1 (look + quality of life) is folded into R3.6, R4.7, R6.6, N3.4 and N6.5. R13 is update 2 (theme presets, with B-R11), on its own branch and PR. Update 3 (engagement) gets its own grilling session; its draft lives in `.scratch/iterative-reflection-frontend/notes/`.
 
 ## Summary
 
 **Problem:** The Spring Boot API for the career-discovery loop is done, but there's nothing a student, counselor or admin can actually use. Students need a web app to work through one career at a time and reflect on it. Counselors need a read-only view of the students linked to them. Admins need a way to onboard counselors and track pilot success.
 **Users:** High-school students (13+), mostly on school Chromebooks or laptops. Counselors and one admin, on desktop.
 **Success looks like:** A student can go from sign-up through 3 reflections, the intake prompt, and seeing YES/MAYBE careers in My Journey, with no help and no dead ends. A counselor can see that student's detail. An admin can create that counselor and read the pilot metrics. All three are covered by Playwright e2e tests against the dev backend.
-**Constraints:** Solo developer, no deadline. Runs locally, and is deploy-ready: a Node `standalone` build plus a local docker-compose rehearsal of prod (R12). Next.js 16 App Router + React 19 + TypeScript, Tailwind + shadcn/ui, TanStack Query. **No backend code changes**, so gaps get filled on the client or cut. Desktop-first for every portal.
+**Constraints:** Solo developer, no deadline. Runs locally, and is deploy-ready: a Node `standalone` build plus a local docker-compose rehearsal of prod (R12). Next.js 16 App Router + React 19 + TypeScript, Tailwind + shadcn/ui, TanStack Query. Backend changes only where B-R11 lists them; any other gap gets filled on the client or cut. Desktop-first for every portal.
+**Visual identity:** curious, supportive, grounded. Minimal: color is an accent, never the main event, and no palette may resemble a specific company's brand. Update 2 success: the admin switches to `harbor`, and a student's next page load (sign-in included) is harbor with no Grove flash, every preset passes AA, and the brand check is recorded.
 
 ## Page map
 
@@ -40,8 +43,8 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 /admin                         → /admin/metrics
   /admin/metrics               Pilot metrics                                       R10  ← home
   /admin/counselors            Counselor list, create, (de)activate                R10
-  /admin/audit                 Counselor-view audit log                            R10
-  /admin/settings              Profile · Password                                  R10.7
+  /admin/audit                 Counselor views · Admin activity (tabs)             R10.6, R13.9
+  /admin/settings              Profile · Password · App theme                      R10.7, R13.5
   sidebar: Metrics · Counselors · Audit log · Settings
 ```
 
@@ -186,16 +189,32 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | R12.4 | nginx front door | nginx serves `https://localhost` with a mkcert certificate (git-ignored, setup step in the README). It sends `/api/*` to Spring and `/*` to Next, and sets `X-Forwarded-For` and `X-Forwarded-Proto` as the backend README requires |
 | R12.5 | Smoke test against the rehearsal | `pnpm e2e:smoke` against `https://localhost`: the bootstrap admin signs in and sees metrics, creates a counselor, the counselor's first sign-in forces a password change, a student signs up with the counselor's code and sees a feed card. It runs on Chromium, Firefox and WebKit |
 
+### R13: Admin-selectable theme presets (update 2) `🟡 partial`
+
+| ID | Requirement | Acceptance criterion | Status |
+|----|-------------|----------------------|--------|
+| R13.1 | Four presets fill the same slots | `grove` (default: `:root`, also `[data-theme="grove"]`), `harbor` (cool, steady), `plum` (soft, creative) and `slate` (neutral) each define all 15 slots from N6.5 in `globals.css`. The token check's `PRESETS` list has all four and fails if any preset is missing a slot. No component changes per preset | `🟡` token check already loops `PRESETS`, but only `grove` exists |
+| R13.2 | The theme applies to every page | A theme query on `GET /api/settings/theme` [B-R11.1], mounted in the root providers, sets `data-theme` on `<html>` on every page, including `/signin`, `/terms` and `/change-password`. It is fetched once per full page load (no focus refetch, no polling). Students and counselors have no theme control | `⬜` |
+| R13.3 | No flash of the wrong theme | An inline `<head>` script applies the last theme id from `localStorage` before first paint, and the server value then overwrites both the attribute and the stored hint. Playwright check: with `harbor` saved and the theme request delayed, a reload has `data-theme="harbor"` at DOMContentLoaded | `⬜` |
+| R13.4 | Fallbacks | If the theme request fails, returns an unknown id, or `localStorage` throws, the app uses `grove` and shows no error, toast or retry panel | `⬜` |
+| R13.5 | App theme card on `/admin/settings` | A card after Password: a native radio group with one option per preset showing its name, swatches and a mini mock card (a feed card with a `primary` Start button, YES/MAYBE/NO chips and a progress bar) drawn in that preset via a scoped `data-theme`. The saved preset is preselected from `GET /api/admin/settings/theme` [B-R11.3]. Selecting a radio changes only the mock cards, not the page | `⬜` |
+| R13.6 | Saving the theme | Save is disabled while the selection equals the saved preset and while a save is pending. Save sends `PUT /api/admin/settings/theme` [B-R11.2]. On 200: a success toast, `<html data-theme>` and the stored hint update immediately with no reload, and R13.7's line updates. On an error: an error toast (N5.2 copy), the radio reverts to the saved preset, and the page theme doesn't change | `⬜` |
+| R13.7 | "Last changed" line | The card shows "Last changed by <display name> on <date>" (local time) from B-R11.3. With no saved theme (`updatedAt` null), the line is hidden | `⬜` |
+| R13.8 | Change propagation | Other users get the new theme on their next full page load. An already-open tab keeps its theme until reloaded. There is no live push | `⬜` |
+| R13.9 | Admin activity tab on `/admin/audit` | `/admin/audit` gets two tabs: "Counselor views" (R10.6, unchanged) and "Admin activity", kept in the URL as `?tab=activity`. The activity tab is a paginated table (20 per page, newest first) from `GET /api/admin/activity` [B-R11.8] with When (local time), Admin, Action and Details (e.g. "Theme: Grove → Harbor", "Created counselor jane@school.org", "Deactivated counselor …"). With no rows it shows "No admin activity yet." | `⬜` |
+| R13.10 | Carried-over verification | Ships in the same PR: tickets 01, 05 and 22 are verified. A GitHub Actions run of the root CI is green (N6.3). Following the deploy README, `https://localhost` serves the app on Postgres (R12.3, R12.4). `pnpm e2e:smoke` passes on Chromium, Firefox and WebKit (R12.5). The ticket checkboxes are ticked, and anything that had to change is noted in `DECISIONS.md` | `🟡` written, never run |
+
 ## Stretch
 
 - **S1: Reflection version history**: a "See earlier versions" drawer on reviewed careers using `GET /api/careers/{id}/reflection/versions`. _Why stretch:_ the API exists, but the student loop works without it.
 - **S2: Celebratory "seen it all" screen**: a summary of verdicts plus some celebration instead of the plain R3.4 empty state. _Why stretch:_ polish.
-- **S3: Dark mode**: follow the system theme using shadcn's CSS variables. _Why stretch:_ not chosen as out, but not needed for the pilot.
+- **S3: Dark mode**: follow the system theme, as a `.dark` variant of each R13 preset's slots (no component changes). _Why stretch:_ not chosen as out, but not needed for the pilot.
 - **S4: "Forgot password?" help**: a link on sign-in explaining that students should ask their counselor and counselors should ask the admin. _Why stretch:_ there's no reset API (backend X5, S2), so this can only be a help message.
+- **S5: Backfilled admin activity**: show "Created counselor" rows for counselors created before update 2, from the backend backfill [B-S6]. _Why stretch:_ the tab starting empty is fine for a pilot.
 
 ## Out-of-Scope
 
-- **X1: Backend changes**: the `../mvp` API is frozen. Gaps (saved careers, student stats) are derived on the client or cut.
+- **X1: Backend changes beyond B-R11**: the `../mvp` API is otherwise frozen. Other gaps (saved careers, student stats) are derived on the client or cut.
 - **X2: Real "save/bookmark" for careers**: no endpoint. Saved = YES/MAYBE reflections (R6.3). Browser-only bookmarks were rejected because they don't follow the student across devices.
 - **X3: Student view of top interests and abandoned careers**: only the counselor API exposes them. Needs a backend change (backend S4).
 - **X4: Third-party analytics / tracking**: conflicts with the backend's minors' data minimization (B-N2.8).
@@ -208,6 +227,13 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 - **X11: Content management UI**: content arrives through Flyway migrations (backend X4).
 - **X12: Internationalization**: the pilot is English only (backend X11).
 - **X13: Phase 2/3 features (assignments, guides)**: later backend phases (backend X1–X3, S1).
+- **X14: Per-user theme choice**: one admin-chosen theme keeps a shared identity (R13.2).
+- **X15: Free-form theme colors**: admins pick from contrast-checked presets only (R13.1), so unreadable or brand-copying palettes can't be entered.
+- **X16: Live theme push (websockets/SSE) or theme refetching**: the theme changes rarely; next full load is enough (R13.8).
+- **X17: Per-school or per-counselor themes**: one pilot, one admin, one theme.
+- **X18: More than four presets**: not now. Adding one later is data plus a token-check entry, not code.
+- **X19: Admin activity export, retention, or other admin actions**: the log holds theme changes and counselor create/(de)activate only. Retention is decided with the FERPA review (backend X17); sign-ins and profile/password changes aren't logged.
+- **X20: New fonts**: Geist only; weight and size carry the hierarchy.
 
 ## Non-functional
 
@@ -236,7 +262,8 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | N3.1 | WCAG 2.1 AA basics | `@axe-core/playwright` reports zero serious or critical violations on every page in the Page map |
 | N3.2 | Keyboard operable | Each role's e2e happy path (N6.2) also passes with keyboard only (Tab/Enter/Space/arrow keys), including the 1–10 scale and dialogs. Focus is visible and trapped inside open dialogs |
 | N3.3 | Labelled inputs and errors | Every input has a label. Field errors are tied to their input via `aria-describedby` and announced |
-| N3.4 | Color contrast | The slot pairs that carry text (foreground, primary-foreground, highlight-text, positive-foreground, muted-foreground on their grounds) meet 4.5:1, enforced by the token check (N6.5). `highlight` is fill-only and never text |
+| N3.4 | Color contrast, every preset | For each of the four presets, the slot pairs that carry text (foreground, primary-foreground, highlight-text, positive-foreground, destructive-foreground, muted-foreground on their grounds, and the MAYBE chip tint) meet 4.5:1, enforced by the token check (N6.5). `highlight` is fill-only and never text. The axe scan (N3.1) also runs `/signin`, `/student/feed` and `/admin/settings` under each preset |
+| N3.5 | Theme card is accessible | The R13.5 radios are keyboard operable (arrow keys move, Space selects) and each one's accessible name is the preset name. Swatches and mock cards are `aria-hidden`. Save success/failure toasts are announced, and focus stays on Save |
 
 ### N4: Compatibility
 
@@ -251,6 +278,7 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 |----|-------------|----------------------|
 | N5.1 | A student finishes the core loop unaided | From a fresh signup, the student reaches a submitted reflection with at most these clicks on top of reading pages: Start → Next × pages → Reflect → Submit |
 | N5.2 | Consistent error copy | Every backend status a page can receive (400/401/403/404/409/429/5xx) has written copy (R1–R10). A raw JSON or stack text never shows, and neither does the backend's free-text `detail`. The one exception is per-field `errors[]` messages, which show under their inputs as R1.5 requires |
+| N5.3 | No brand look-alikes | Before R13 merges, `DECISIONS.md` records, for each preset, its `primary` + `highlight` pair, the nearest well-known brands that use a similar pairing, and why it isn't a look-alike. Drafted by Claude, signed off by the developer |
 
 ### N6: Maintainability
 
@@ -260,15 +288,17 @@ Every page sits under a role prefix with its own layout (sidebar + user menu) an
 | N6.2 | E2E happy path per role | Playwright, against `./mvnw spring-boot:run` (dev) with the demo accounts (password `demo`). Every run signs up with a unique `e2e+<timestamp>@…` email, and `pnpm e2e:reset` deletes `../mvp/data` for a clean start. Includes one flow from a clean browser with no cookies (CSRF bootstrap, R11.3): a student signs up, reflects ×3, handles the intake modal, sees My Journey. A counselor views the student's detail. An admin creates a counselor, and that counselor's first sign-in forces a password change |
 | N6.3 | CI | A frontend job in the root `.github/workflows/ci.yml` (Node 24, pnpm through corepack) runs `pnpm lint`, `pnpm typecheck` and `pnpm test` on every push and PR. E2E and smoke run locally (they need the backend) |
 | N6.4 | Config by env | Public values are fixed at build time: `NEXT_PUBLIC_TERMS_VERSION` (default `2026-11-18`). `BACKEND_URL` (default `http://localhost:8080`) is only used by the dev rewrite. The production server needs no runtime env vars, and nothing is hard-coded per environment |
-| N6.5 | Color-slot rule and token check | Components and pages use only named color slots (`background`, `surface`, `foreground`, `muted`, `muted-foreground`, `border`, `primary`, `primary-foreground`, `highlight`, `highlight-text`, `positive`, `positive-foreground`, `destructive`, `ring`) and never raw values. Raw values live only in `globals.css`. A Vitest token check (`src/lib/theme/tokens.test.ts`) reads the slot values per preset, asserts WCAG AA on the text/ground pairs, and fails on hex, `rgb()`, `oklch()`, `hsl()` or Tailwind palette classes in source |
+| N6.5 | Color-slot rule and token check | Components and pages use only named color slots (`background`, `surface`, `foreground`, `muted`, `muted-foreground`, `border`, `primary`, `primary-foreground`, `highlight`, `highlight-text`, `positive`, `positive-foreground`, `destructive`, `destructive-foreground`, `ring`) and never raw values. Raw values live only in `globals.css`. A Vitest token check (`src/lib/theme/tokens.test.ts`) reads the slot values per preset, asserts WCAG AA on the text/ground pairs, and fails on hex, `rgb()`, `oklch()`, `hsl()` or Tailwind palette classes in source |
+| N6.6 | Theme e2e | Against the dev stack: the admin selects `harbor`, saves, sees the toast, `<html data-theme="harbor">` and the "Last changed" line, and the activity tab lists the change. A fresh signed-out context then opens `/signin` with `data-theme="harbor"`. The test resets the theme to `grove` afterwards |
 
 ### Look: Grove (update 1)
 
-The default palette is **Grove**: a warm off-white `background` with white `surface` panels, forest green `primary` (buttons, active nav, wordmark, filled scale), a single orange `highlight` used only as a fill, and a pale blue-gray `positive` for YES and Active. Cards have no border or shadow. Each screen has at most one `primary`-filled button. The "Iterative Reflection" wordmark (semibold Geist, `primary`) sits at the top of each portal shell and above the sign-in form. Font stays Geist only. Dark mode and other presets are not part of this update.
+The default palette is **Grove**: a warm off-white `background` with white `surface` panels, forest green `primary` (buttons, active nav, wordmark, filled scale), a single orange `highlight` used only as a fill, and a pale blue-gray `positive` for YES and Active. Cards have no border or shadow. Each screen has at most one `primary`-filled button. The "Iterative Reflection" wordmark (semibold Geist, `primary`) sits at the top of each portal shell and above the sign-in form. Font stays Geist only. Update 2 (R13) adds three more presets that fill the same slots; Grove stays the default.
 
 _Skipped areas:_ reliability/availability (the frontend is a stateless, client-rendered Node server, so uptime belongs to hosting and the backend), scalability (300-student pilot, and the backend is the bottleneck), cost (no paid services; the real host is picked later, see Open Questions), data retention (the frontend stores no data, only the backend does).
 
 ## Open Questions
 
 - **Real terms text (R1.7):** a placeholder ships with `NEXT_PUBLIC_TERMS_VERSION=2026-11-18`. Real terms must be written, and the version bumped, before any school uses the app.
+- **Hex values for `harbor`, `plum` and `slate` (R13.1):** no drafts exist yet (the earlier notes said there were, but the diff has none). Claude drafts a full slot set per preset that passes N3.4, and the developer picks the final values from the R13.5 mock cards, alongside the N5.3 brand check. Blocks R13.1.
 - **Production host:** the frontend is deploy-ready (R12), and the compose rehearsal is the reference setup. The real host (same EC2 behind nginx, or another Node host) gets picked with the backend's EC2 phase. Either way `/api` must stay same-origin and served over HTTPS.

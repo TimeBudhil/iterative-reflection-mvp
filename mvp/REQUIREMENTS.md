@@ -1,8 +1,8 @@
 # Iterative Reflection MVP: Requirements
 
-_Last updated: 2026-11-18_
+_Last updated: 2026-11-20 (added R11: settings module and admin activity log, update 2)_
 
-> Codebase status: fresh Spring Boot 4.1.2 / Java 25 / Spring Modulith 2.1.1 scaffold (JPA, H2, Security, Actuator, Prometheus). No features built yet, so every requirement below is `⬜ new`; the status column is omitted.
+> Codebase status: R1–R10 are built (the backend was frozen after the MVP, and the frontend in `../iterative-reflection-frontend` was built against it). R11 is the only planned addition, made for the frontend's theme presets (frontend R13, update 2). Everything else stays frozen. The status column is omitted: R1–R10 are `✅ existing`, R11 is `⬜ new`.
 
 ## Summary
 
@@ -136,6 +136,22 @@ _Last updated: 2026-11-18_
 | R10.3 | Seed migrations are idempotent / run once | Restarting the app doesn't duplicate any seed rows |
 | R10.4 | The same migrations run on Postgres (the later `prod` profile) | Migrations use only SQL portable between H2 (PostgreSQL mode) and Postgres |
 
+### R11: Settings module and admin activity log (update 2)
+
+A new Spring Modulith module, `settings`, owns storage of app-wide settings and nothing else. Each setting is exposed through its own small typed service, so a future setting is a new service, not a schema change. The `admin` module owns a log of admin actions.
+
+| ID | Requirement | Acceptance criterion |
+|----|-------------|----------------------|
+| R11.1 | Anyone can read the app theme | `GET /api/settings/theme` returns `{presetId}` without authentication (it's needed on `/signin`), with `Cache-Control: no-cache`. With nothing saved it returns `grove`. It never returns who changed it or when. Only GET is `permitAll` |
+| R11.2 | Only an admin can change the theme | `PUT /api/admin/settings/theme {presetId}` returns 200 with `{presetId, updatedAt, updatedByName}`. An id outside `grove`, `harbor`, `plum`, `slate` returns 400 with a field error. A non-admin gets 403. CSRF applies (N2.3). Saving the current value returns 200 but publishes no event, writes no activity row and leaves `updatedAt` unchanged |
+| R11.3 | Admin view of the theme | `GET /api/admin/settings/theme` returns `{presetId, updatedAt, updatedByName}`, with `updatedAt`/`updatedByName` null when nothing has been saved. Served by `admin`, which combines `ThemeSettings` with the display name from `identity`. A non-admin gets 403 |
+| R11.4 | Generic storage, typed access | One `app_settings` table (`key` primary key, `value_json`, `updated_by`, `updated_at` in UTC), created by a Flyway migration that's portable per R10.4. The persistence class is in `settings.internal`. A public `ThemeSettings` service validates the preset id and reads/writes through it. No other module touches the table |
+| R11.5 | Changes publish an event | Every save that changes the value publishes a `SettingChanged` event (key, old value, new value, admin id, timestamp). An `@ApplicationModuleTest` asserts it's published on a change and not on a same-value save |
+| R11.6 | Admin activity log, owned by `admin` | An `admin_activity` table in `admin.internal` (id, admin id, action, detail JSON, `created_at` UTC; portable per R10.4). Actions: `THEME_CHANGED` (from a listener on `SettingChanged`, detail old → new), `COUNSELOR_CREATED`, `COUNSELOR_DEACTIVATED` and `COUNSELOR_REACTIVATED` (written in the admin counselor flow, detail = counselor email; a PATCH that doesn't change `active` logs nothing). `settings` has no dependency on `admin` (N4.1). Separate from the counselor-view audit log (R8.6) |
+| R11.7 | The log is best-effort | A failed activity write never fails the action that caused it: the theme save or counselor action still commits and returns its normal status, and the failure is logged at WARN with the request ID. The theme row is written after commit. A test forces the insert to fail and asserts the action stuck. (A deliberate exception to the same-transaction listener rule of `ReflectionSaved`/`IntakeSaved`) |
+| R11.8 | The admin reads the activity log | `GET /api/admin/activity` returns rows `{createdAt, adminName, action, detail}`, newest first, paginated per N8.1. A non-admin gets 403 |
+| R11.9 | The backend stores only the preset id | No colors are stored or returned. Palettes live in the frontend |
+
 ## Stretch
 
 - **S1: Static guides (Phase 2 preview)**: read-only guide content such as the LinkedIn/networking guide, delivered as a Guide module. _Why stretch:_ it's cheap, read-only content, but the core loop doesn't need it.
@@ -143,6 +159,7 @@ _Last updated: 2026-11-18_
 - **S3: Student data export & account deletion**: a student downloads their data as JSON and can delete their account. _Why stretch:_ good privacy hygiene, but not required for a pilot.
 - **S4: Student self-insight summary**: a student sees their own top tags and their YES/MAYBE/NO history. _Why stretch:_ useful for self-awareness, but secondary to the feed + reflection loop.
 - **S5: Testcontainers Postgres test**: run the integration suite against real Postgres. _Why stretch:_ a safety net for the later EC2 move.
+- **S6: Backfill `COUNSELOR_CREATED` activity rows**: a one-off migration adds rows for counselors that existed before R11.6, attributed to the bootstrap admin at the counselor's creation time. _Why stretch:_ the log starting empty is fine for a pilot, and the attribution is a guess.
 
 ## Out-of-Scope
 
@@ -164,9 +181,11 @@ All of these are planned for **later phases** of the application, not dropped.
 - **X14: Recomputing affinity when career tags change**: _Later phase:_ easier once semantic embeddings replace the tag model (see R6.8).
 - **X15: Verdict-weighted affinity**: _Later phase:_ verdicts are stored now, so the weighting can be tuned from pilot data.
 - **X16: Forced re-acceptance of new terms versions**: _Later phase:_ the MVP only records the accepted version (R1.12).
-- **X17: Audit-log retention policy**: _Later phase:_ decide alongside the FERPA / district data review before a real school pilot.
+- **X17: Audit-log retention policy**: _Later phase:_ decide alongside the FERPA / district data review before a real school pilot. Covers the R11.6 admin activity log too, as do exports of either log.
 - **X18: Email change**: _Later phase:_ needs email verification (X5).
 - **X19: Student-visible "who viewed my data" log**: _Later phase:_ the audit rows (R8.6) already exist, so this is just an endpoint later.
+- **X20: Storing theme colors, per-user or per-school themes**: _Not planned:_ the backend stores one app-wide preset id (R11.9).
+- **X21: Logging other admin actions**: _Not planned for now:_ sign-ins and profile/password changes aren't logged. The R11.6 action list can grow later.
 
 ## Non-functional
 
@@ -188,7 +207,7 @@ All of these are planned for **later phases** of the application, not dropped.
 | N2.5 | Login rate limiting | The 6th failed attempt within 15 min for the same account or IP returns 429. Rate-limit counters (here and R2.6) are kept in memory and may reset on restart |
 | N2.6 | Role- and ownership-based authorization on every endpoint | Tests cover: a student can't read another student's data, a counselor gets 403 on unlinked students, and non-admins get 403 on `/api/admin/**` |
 | N2.7 | Error responses don't leak internals | No stack traces or SQL in any response body |
-| N2.8 | Minors' data minimization | Only the fields in R1–R9 are stored. The birthdate is used only for the age gate and never persisted (R1.13). No third-party tracking |
+| N2.8 | Minors' data minimization | Only the fields in R1–R9 and R11 are stored (R11 holds no student data). The birthdate is used only for the age gate and never persisted (R1.13). No third-party tracking |
 
 ### N3: Reliability
 
@@ -203,7 +222,7 @@ All of these are planned for **later phases** of the application, not dropped.
 
 | ID | Requirement | Acceptance criterion |
 |----|-------------|----------------------|
-| N4.1 | Modular monolith boundaries enforced | The `ApplicationModules.of(MvpApplication.class).verify()` test passes. Modules: auth/identity, student, counselor, career, feed, reflection, intake, admin, with later ones (guide, assignment) added without touching the existing internals |
+| N4.1 | Modular monolith boundaries enforced | The `ApplicationModules.of(MvpApplication.class).verify()` test passes. Modules: auth/identity, student, counselor, career, feed, reflection, intake, admin, settings, with later ones (guide, assignment) added without touching the existing internals. `settings` depends on no other feature module |
 | N4.2 | Cross-module communication only via public APIs or application events | The Modulith verify test catches any access to another module's `internal` package |
 | N4.3 | Integration tests per module | Each module has ≥1 `@ApplicationModuleTest`. `./mvnw verify` is green |
 | N4.4 | API contract published for the frontend | springdoc serves `/v3/api-docs` and Swagger UI in `dev`, and every endpoint has request/response schemas |
@@ -236,8 +255,8 @@ All of these are planned for **later phases** of the application, not dropped.
 
 | ID | Requirement | Acceptance criterion |
 |----|-------------|----------------------|
-| N8.1 | List endpoints are paginated | Every list endpoint accepts `page`/`size` (default 20, max 100, larger values clamped) and returns page metadata. This covers R2.4, R5.6 history, R5.7, R8.1, R9.3 and R9.6 |
-| N8.2 | List endpoints have a defined default sort | Reflections sort by `updatedAt`, newest first. Counselor students sort by last active, newest first (R8.1). The audit log sorts newest first |
+| N8.1 | List endpoints are paginated | Every list endpoint accepts `page`/`size` (default 20, max 100, larger values clamped) and returns page metadata. This covers R2.4, R5.6 history, R5.7, R8.1, R9.3, R9.6 and R11.8 |
+| N8.2 | List endpoints have a defined default sort | Reflections sort by `updatedAt`, newest first. Counselor students sort by last active, newest first (R8.1). The audit log and the admin activity log (R11.8) sort newest first |
 
 _Skipped areas:_ accessibility and browser compatibility (backend only, so they belong to the Next.js frontend), usability (frontend concern; the API supports it through clear errors and `intakePromptDue`), i18n (the pilot is English only, X11), scalability beyond the pilot (a single instance covers 300 students; revisit in the EC2 phase).
 
