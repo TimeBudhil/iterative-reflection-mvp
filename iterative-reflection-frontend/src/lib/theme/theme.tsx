@@ -16,8 +16,8 @@ async function fetchThemePresetId(): Promise<PresetId> {
   }
 }
 
-/** Fetched once per full page load: no refetch on focus or reconnect, no polling, never retried. */
-export function useThemePresetId(): PresetId {
+/** Fetched once per full page load: no refetch on focus or reconnect, no polling, never retried. `undefined` until it resolves. */
+export function useThemePresetId(): PresetId | undefined {
   const { data } = useQuery({
     queryKey: queryKeys.theme,
     queryFn: fetchThemePresetId,
@@ -28,14 +28,15 @@ export function useThemePresetId(): PresetId {
     refetchOnReconnect: false,
     refetchOnMount: false,
   });
-  return data ?? DEFAULT_PRESET_ID;
+  return data;
 }
 
 /** Renders nothing; keeps `<html data-theme>` in step with the app theme on every page, signed in or out. */
 export function ThemeApplier() {
   const presetId = useThemePresetId();
   useEffect(() => {
-    applyTheme(presetId);
+    // Until the server answers, keep whatever the head script set from the hint.
+    if (presetId) applyTheme(presetId);
   }, [presetId]);
   return null;
 }

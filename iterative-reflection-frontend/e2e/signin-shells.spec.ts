@@ -181,4 +181,57 @@ test.describe("app theme", () => {
     await expect(page.getByText("Password", { exact: true }).first()).toBeVisible();
     await expect(page.getByText(/app theme/i)).toHaveCount(0);
   });
+  // "harbor saved" is simulated by route interception, like the tests above (no admin PUT needed).
+  test("with harbor saved and the theme request delayed, a reload has data-theme=harbor at DOMContentLoaded", async ({
+    page,
+  }) => {
+    await page.route("**/api/settings/theme", async (route) => {
+      await new Promise((r) => setTimeout(r, 1500));
+      await route.fulfill({ contentType: "application/json", body: presetBody("harbor") });
+    });
+    await page.goto("/signin");
+    await expect(html(page)).toHaveAttribute("data-theme", "harbor");
+    let atDcl: string | null = null;
+    await page.addInitScript(() => {
+      document.addEventListener("DOMContentLoaded", () => {
+        (window as unknown as { __dclTheme: string | null }).__dclTheme =
+          document.documentElement.getAttribute("data-theme");
+      });
+    });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    atDcl = await page.evaluate(() => (window as unknown as { __dclTheme: string | null }).__dclTheme);
+    expect(atDcl).toBe("harbor");
+  });
+
+  test("the server wins over the hint, and an unknown server id resets the hint to grove", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("ir-theme", "plum"));
+    await page.route("**/api/settings/theme", (route) =>
+      route.fulfill({ contentType: "application/json", body: presetBody("slate") }),
+    );
+    await page.goto("/signin");
+    await expect(html(page)).toHaveAttribute("data-theme", "slate");
+    expect(await page.evaluate(() => localStorage.getItem("ir-theme"))).toBe("slate");
+  });
+
+  test("an unknown id in the stored hint is ignored", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("ir-theme", "neon"));
+    await page.route("**/api/settings/theme", (route) => route.abort());
+    await page.goto("/signin");
+    await expect(html(page)).toHaveAttribute("data-theme", "grove");
+  });
+
+  test("localStorage throwing loads Grove with no error shown", async ({ page }) => {
+    await page.addInitScript(() => {
+      const boom = () => {
+        throw new Error("blocked");
+      };
+      Object.defineProperty(window, "localStorage", { get: boom });
+    });
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto("/signin");
+    await expect(html(page)).toHaveAttribute("data-theme", "grove");
+    await noThemeError(page);
+    expect(errors).toEqual([]);
+  });
 });
