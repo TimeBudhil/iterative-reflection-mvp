@@ -33,6 +33,16 @@ describe("viewerState", () => {
   });
 });
 
+describe("viewerState progress", () => {
+  it("is page / lastPage: first page, last page, clamped", () => {
+    expect(viewerState("in-progress", 1, 4).progress).toBe(0.25);
+    expect(viewerState("review", 4, 4).progress).toBe(1);
+    expect(viewerState("review", 9, 4).progress).toBe(1);
+    expect(viewerState("review", 0, 4).progress).toBe(0.25);
+    expect(viewerState("in-progress", 1, 0).progress).toBe(1);
+  });
+});
+
 describe("clampPage / isUnavailable", () => {
   it("clamps into 1..last", () => {
     expect(clampPage(0, 3)).toBe(1);
