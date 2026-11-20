@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext, type Page } from "@playwright/test";
+import { expect, type APIRequestContext, type Browser, type Page } from "@playwright/test";
 
 /** Shared e2e helpers. Everything goes through the page's baseURL and the Next `/api` rewrite, never a fixed port. */
 
@@ -55,4 +55,23 @@ export async function freshStudent(page: Page, prefix: string, displayName = "E2
   const email = await signUpStudent(page, { prefix, displayName });
   await signIn(page, email, STUDENT_PASSWORD, /\/student\/feed$/);
   return Number((await page.getByRole("link", { name: "Start", exact: true }).getAttribute("href"))!.split("/").pop());
+}
+
+/**
+ * Puts the app theme back to Grove (the setting is global state shared by every spec). Signs the demo admin in on a
+ * throwaway context, so it never touches the calling page's session. Call from `afterEach`/`afterAll` of any spec that saves a theme.
+ */
+export async function resetThemeToGrove(browser: Browser): Promise<void> {
+  const ctx = await browser.newContext();
+  try {
+    const page = await ctx.newPage();
+    await signIn(page, "admin@demo.example", DEMO_PASSWORD, "away");
+    const res = await page.request.put("/api/admin/settings/theme", {
+      headers: await csrfHeaders(page.request),
+      data: { presetId: "grove" },
+    });
+    expect(res.status()).toBe(200);
+  } finally {
+    await ctx.close();
+  }
 }
