@@ -1,5 +1,6 @@
 // @vitest-environment node
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -77,6 +78,47 @@ describe.each(PRESETS)("$name palette tokens", ({ selector }) => {
 
   it.each(AA_PAIRS)("%s on %s meets WCAG AA (4.5:1)", (fg, bg) => {
     expect(contrast(values[fg], values[bg])).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe("raw color guard", () => {
+  const srcRoot = fileURLToPath(new URL("../..", import.meta.url));
+  const PALETTES =
+    "slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose";
+  const RAW = [
+    { name: "hex value", re: /#[0-9a-fA-F]{3,8}\b/ },
+    { name: "rgb()/rgba()", re: /\brgba?\(/ },
+    { name: "oklch()", re: /\boklch\(/ },
+    { name: "hsl()/hsla()", re: /\bhsla?\(/ },
+    {
+      name: "Tailwind palette class",
+      re: new RegExp(
+        `\\b[a-z-]*(?:bg|text|border|ring|fill|stroke|from|via|to|divide|outline|decoration|accent|caret|shadow)-(?:${PALETTES})-\\d{2,3}\\b`,
+      ),
+    },
+  ];
+
+  function sources(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) return sources(p);
+      if (!/\.tsx?$/.test(e.name) || /\.(test|spec)\.tsx?$/.test(e.name) || e.name.endsWith(".d.ts")) return [];
+      return [p];
+    });
+  }
+
+  it("finds no raw colors in component or page source (globals.css is exempt)", () => {
+    const offenders: string[] = [];
+    for (const file of sources(srcRoot)) {
+      readFileSync(file, "utf8")
+        .split("\n")
+        .forEach((line, i) => {
+          for (const { name, re } of RAW) {
+            if (re.test(line)) offenders.push(`${file.slice(srcRoot.length)}:${i + 1} ${name}: ${line.trim()}`);
+          }
+        });
+    }
+    expect(offenders).toEqual([]);
   });
 });
 

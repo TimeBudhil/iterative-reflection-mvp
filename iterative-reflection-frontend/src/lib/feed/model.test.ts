@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { feedView, startLabel } from "./model";
+import { feedProgress, feedView, startLabel } from "./model";
 
 describe("startLabel", () => {
   it("says Start with no progress", () => {
@@ -25,5 +25,28 @@ describe("feedView", () => {
   it("is exhausted when there is no career", () => {
     expect(feedView({ career: undefined, exhausted: true })).toEqual({ kind: "exhausted" });
     expect(feedView({ career: null, exhausted: true })).toEqual({ kind: "exhausted" });
+  });
+});
+
+describe("feedProgress", () => {
+  it("0 reflections: intake line, no explored count", () => {
+    expect(feedProgress(0)).toEqual({
+      intake: { label: "0 of 3 reflections until your interests form unlocks", current: 0, max: 3 },
+      explored: null,
+    });
+  });
+  it("1 reflection: singular explored count", () => {
+    const p = feedProgress(1);
+    expect(p.intake?.label).toBe("1 of 3 reflections until your interests form unlocks");
+    expect(p.explored).toBe("1 career explored");
+  });
+  it("2 reflections: plural explored count", () => {
+    const p = feedProgress(2);
+    expect(p.intake).toMatchObject({ current: 2, max: 3 });
+    expect(p.explored).toBe("2 careers explored");
+  });
+  it("3 and 5 reflections: intake hidden", () => {
+    expect(feedProgress(3)).toEqual({ intake: null, explored: "3 careers explored" });
+    expect(feedProgress(5)).toEqual({ intake: null, explored: "5 careers explored" });
   });
 });
