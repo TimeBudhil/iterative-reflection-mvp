@@ -1,8 +1,8 @@
 # Iterative Reflection MVP: Requirements
 
-_Last updated: 2026-11-20 (added R11: settings module and admin activity log, update 2)_
+_Last updated: 2026-11-20 (R11 built: settings module and admin activity log, update 2)_
 
-> Codebase status: R1–R10 are built (the backend was frozen after the MVP, and the frontend in `../iterative-reflection-frontend` was built against it). R11 is the only planned addition, made for the frontend's theme presets (frontend R13, update 2). Everything else stays frozen. The status column is omitted: R1–R10 are `✅ existing`, R11 is `⬜ new`.
+> Codebase status: R1–R10 are built (the backend was frozen after the MVP, and the frontend in `../iterative-reflection-frontend` was built against it). R11 is the only addition, made for the frontend's theme presets (frontend R13, update 2). Everything else stays frozen. The status column is omitted: R1–R10 and R11 are `✅ existing`. Differences in the R11 build: the `admin` module's first table is `admin_activity` (V20_1), `app_settings` is V19_1, and saving the current effective value (even `grove` with no row) is a no-op.
 
 ## Summary
 

@@ -22,4 +22,6 @@ export const verdictStyle = (verdict: Verdict): VerdictStyle => VERDICT[verdict]
 
 export const activeBadge = (active: boolean): string => (active ? POSITIVE : NEUTRAL);
 
-export const outcomeBadge = (allowed: boolean): string => (allowed ? POSITIVE : "bg-destructive/10 text-destructive");
+/** Denied is a solid destructive fill: a translucent tint with destructive text fell below AA on the page background. The pair is in the token check. */
+export const outcomeBadge = (allowed: boolean): string =>
+  allowed ? POSITIVE : "bg-destructive text-destructive-foreground";

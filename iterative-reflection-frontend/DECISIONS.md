@@ -215,3 +215,34 @@ _Last updated: 2026-11-18_
 - **One verdict type:** `src/lib/verdict.ts` exports `VERDICTS`, `Verdict`, `VerdictCounts` and `isVerdict`; `verdictStyle` takes a `Verdict`, and `VerdictBadge` renders nothing for unknown values instead of falling back to NO.
 - **ProgressBar takes a fraction:** the bar fill comes from the model's `progress` / `fraction`; `value` and `max` are only the ARIA numbers.
 - **Explored count has no total:** no endpoint exposes the number of careers, and the backend is frozen. "n careers explored" counts reflections (abandons are invisible to students) and is hidden at 0. An "of N" total waits for update 3.
+
+## Theme presets (update 2)
+
+- **Four value sets, same 15 slots:** all share `surface #ffffff` and `destructive #e7000b` / `destructive-foreground #ffffff`. Each also passes the token check pairs and the MAYBE-chip tint check.
+
+  | Preset | background | foreground | primary | highlight | highlight-text | positive (+ text) | muted / muted-foreground | border |
+  |--------|-----------|-----------|---------|-----------|----------------|-------------------|--------------------------|--------|
+  | grove (default) | `#edefeb` | `#121511` | `#163300` | `#f08952` | `#a25a0e` | `#d6e4e8` (`#163300`) | `#e2e5df` / `#565c53` | `#d3d7d0` |
+  | harbor | `#ebeff1` | `#10181d` | `#12344d` | `#3aa99f` | `#17716a` | `#efe5d2` (`#12344d`) | `#dfe5e8` / `#4f5d65` | `#ced7dc` |
+  | plum | `#f1edf0` | `#1a1219` | `#4a1f4f` | `#6bb39b` | `#2f7360` | `#e4e0ef` (`#4a1f4f`) | `#e7e0e5` / `#5e5260` | `#dacfd7` |
+  | slate | `#eeeff1` | `#15171a` | `#2b3038` | `#6f9fd8` | `#2f5f9a` | `#dfe8df` (`#2b3038`) | `#e2e4e7` / `#555a61` | `#d2d5da` |
+
+  `ring` equals `primary` in every preset; `primary-foreground` is white. The backend stores only the id, so palettes live in `globals.css` alone. The hex question in `REQUIREMENTS.md` is closed: these are the values.
+- **Theme loading:** `GET /api/settings/theme` is fetched once per full page load (`staleTime`/`gcTime` infinite, no retry, no focus or reconnect refetch, no polling). `applyTheme()` in `src/lib/theme/presets.ts` is the only place that sets `data-theme`.
+- **`localStorage` hint (`ir-theme`):** an inline head script (`THEME_HEAD_SCRIPT`) applies the last-seen id before first paint; the server answer then overwrites attribute and hint. The hint holds only a preset id, never anything auth-related, and unknown or blocked storage counts as no hint.
+- **Fallback to grove:** a failed request, an unknown id or a missing value resolves to `grove` with no toast, error or retry panel.
+- **Saves apply immediately:** on a successful save the admin's page updates with no reload (attribute, hint and both theme queries). Other users see it on their next full load; an open tab keeps its theme.
+- **Denied badge is a solid fill (found in close-out):** the Denied outcome badge used `bg-destructive/10 text-destructive`, which failed color contrast on `/admin/audit` (destructive text on a faint tint over the tinted page background). It now uses `bg-destructive text-destructive-foreground`, a pair the token check already asserts for all four presets.
+
+### N5.3 brand check
+
+**Draft, awaiting developer sign-off.** Drafted from general knowledge of well-known brand palettes (no live lookup), so treat the "nearest brands" column as a prompt for review rather than a legal opinion. Already avoided: plum + orange, plum + gold, charcoal + yellow, and forest green + lime.
+
+| Preset | `primary` + `highlight` | Nearest well-known pairings | Why it isn't a look-alike |
+|--------|-------------------------|-----------------------------|---------------------------|
+| grove | deep forest green `#163300` + orange `#f08952` | Wise (very dark green with a bright lime, the pairing already dropped in update 1); Starbucks and Whole Foods (green with white or gold); Home Depot (orange with black) | The accent is orange, not lime, white or gold, and it is fill-only. Caution: Wise's dark green is close in hue to `#163300`; the difference is the orange accent and the blue-gray `positive`. If the developer wants more distance, shift `primary` slightly lighter or bluer |
+| harbor | navy `#12344d` + teal `#3aa99f` (sand `positive`) | Corporate navy + red (Capital One, Citi); navy + bright blue (many banks and SaaS); teal-forward brands such as Xero | The accent is a muted teal on a dark steel navy, with a warm sand `positive`; no red, no bright blue, and no brand uses this trio |
+| plum | deep plum `#4a1f4f` + sage `#6bb39b` (lavender `positive`) | Slack (aubergine `#4a154b` with a green in its multicolor mark); Twitch and Yahoo (purple, brighter and used alone); Cadbury (purple with gold) | Highest-risk preset: the plum is close to Slack's aubergine. It differs in using a soft sage, used as a fill only, rather than a multicolor logo or Slack's brighter green, and in a lavender tint instead of Slack's white and yellow. Developer to confirm or nudge `primary` away from `#4a154b` |
+| slate | charcoal-slate `#2b3038` + sky blue `#6f9fd8` (sage `positive`) | GitHub (dark gray with blue links); Linear and Vercel-style dark neutrals; Facebook and X (blue alone) | The slate is a neutral and the blue is a soft, light sky blue used as a fill only. Neutral-dark plus blue is a generic pairing, not a distinctive brand mark |
+
+Sign-off: _pending developer._

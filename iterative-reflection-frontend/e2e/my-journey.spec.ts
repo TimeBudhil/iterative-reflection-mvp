@@ -59,7 +59,7 @@ test("shows stats, tabs and rows from the reflections list and calls nothing els
   }
 
   // The page itself called nothing but the reflections list (and the session probe /api/me).
-  expect(apis.filter((c) => c !== "GET /api/me" && c !== "GET /api/students/me/reflections")).toEqual([]);
+  expect(apis.filter((c) => c !== "GET /api/me" && c !== "GET /api/settings/theme" && c !== "GET /api/students/me/reflections")).toEqual([]);
 
   await rows.first().getByRole("link").first().click();
   await expect(page).toHaveURL(/\/student\/careers\/\d+$/);
