@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { VerdictBadge } from "@/components/shared/verdict-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RetryPanel } from "@/components/shared/retry-panel";
 import { ApiError } from "@/lib/api/client";
@@ -48,7 +49,7 @@ function Detail({ view }: { view: StudentDetailView }) {
               <li key={r.id} data-testid="reflection" className="space-y-2">
                 <div className="flex flex-wrap items-baseline gap-x-3">
                   <h3 className="font-medium">{r.career}</h3>
-                  <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold">{r.verdict}</span>
+                  <VerdictBadge verdict={r.verdict} className="rounded-md" />
                   {r.date && <span className="text-sm text-muted-foreground">{dateFormat.format(new Date(r.date))}</span>}
                 </div>
                 <dl className="grid gap-x-4 gap-y-1 text-sm sm:grid-cols-[1fr_auto]">

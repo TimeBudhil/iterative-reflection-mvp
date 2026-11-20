@@ -27,6 +27,12 @@ test("shows stats, tabs and rows from the reflections list and calls nothing els
   await expect(page.getByTestId("stat-YES")).toContainText(String(count("YES")));
   await expect(page.getByTestId("stat-MAYBE")).toContainText(String(count("MAYBE")));
   await expect(page.getByTestId("stat-NO")).toContainText(String(count("NO")));
+  const verdicts = ["YES", "MAYBE", "NO"].filter((v) => count(v) > 0);
+  await expect(page.getByRole("img", { name: /^Verdict split:/ })).toHaveAccessibleName(`Verdict split: ${verdicts.map((v) => `${count(v)} ${v}`).join(", ")}`);
+  for (const v of ["YES", "MAYBE", "NO"]) {
+    if (count(v) > 0) await expect(page.getByText(`${v}: ${count(v)}`, { exact: true })).toBeVisible();
+    else await expect(page.getByText(new RegExp(`^${v}: \\d+$`))).toHaveCount(0);
+  }
   const keys = [...new Set(list.flatMap((r) => r.answers.map((a) => a.key)))];
   expect(keys.length).toBeGreaterThan(0);
   for (const k of keys) {
@@ -65,6 +71,7 @@ test("zero reflections shows the empty state linking to the feed", async ({ page
   await signIn(page, student);
   await page.goto("/student/journey");
   await expect(page.getByText("Reflect on your first career to see your journey here.")).toBeVisible();
+  await expect(page.getByRole("img", { name: /^Verdict split:/ })).toHaveCount(0);
   await page.getByRole("link", { name: "Go to the feed" }).click();
   await expect(page).toHaveURL(/\/student\/feed$/);
 });

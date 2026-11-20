@@ -19,16 +19,21 @@ test("pages through the career, saves progress, shows Reflect only on the last p
   const last = Number((await indicator.textContent())!.match(/of (\d+)/)![1]);
   await expect(page.getByRole("button", { name: "Previous" })).toBeDisabled();
   await expect(page.getByRole("link", { name: "Reflect on this career" })).toHaveCount(0);
+  const bar = page.getByRole("progressbar", { name: `Page 1 of ${last}` });
+  await expect(bar).toHaveAttribute("aria-valuenow", "1");
+  await expect(bar).toHaveAttribute("aria-valuemax", String(last));
 
   // Page 2 holds the video embed, the last page the external link.
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await expect(indicator).toHaveText(`Page 2 of ${last}`);
+  await expect(page.getByRole("progressbar", { name: `Page 2 of ${last}` })).toHaveAttribute("aria-valuenow", "2");
   const frame = page.locator("iframe");
   await expect(frame).toHaveAttribute("sandbox", "allow-scripts allow-same-origin allow-presentation");
   expect(await frame.getAttribute("title")).toBeTruthy();
 
   for (let n = 3; n <= last; n++) await page.getByRole("button", { name: "Next", exact: true }).click();
   await expect(indicator).toHaveText(`Page ${last} of ${last}`);
+  await expect(page.getByRole("progressbar", { name: `Page ${last} of ${last}` })).toHaveAttribute("aria-valuenow", String(last));
   const link = page.getByRole("link", { name: "Reflect on this career" });
   await expect(link).toHaveAttribute("href", `/student/careers/${id}/reflect`);
   await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
@@ -110,6 +115,9 @@ test("a reflected career opens in review mode: free navigation, no reflect butto
   await expect(page.getByTestId("page-indicator")).toHaveText(/^Page 1 of/);
   await page.getByRole("list", { name: "Jump to page" }).getByRole("button", { name: "3", exact: true }).click();
   await expect(page.getByTestId("page-indicator")).toHaveText(/^Page 3 of/);
+  const bar = page.getByRole("progressbar");
+  await expect(bar).toHaveAttribute("aria-valuenow", "3");
+  await expect(bar).toHaveAccessibleName(/^Page 3 of \d+$/);
   await expect(page.getByRole("link", { name: "Reflect on this career" })).toHaveCount(0);
   expect(viewedCalls).toBe(0);
 });

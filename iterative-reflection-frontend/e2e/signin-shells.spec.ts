@@ -17,6 +17,11 @@ test("a 5xx on sign-in shows the written copy and the request id", async ({ page
   await expect(page.getByTestId("request-id")).toHaveText("req-signin-1");
 });
 
+test("the Iterative Reflection wordmark is on the sign-in page", async ({ page }) => {
+  await page.goto("/signin");
+  await expect(page.getByText("Iterative Reflection", { exact: true }).first()).toBeVisible();
+});
+
 test("/signin?mode=signup selects Sign up, and tab switches update the URL without a reload", async ({ page }) => {
   await page.goto("/signin?mode=signup");
   const signUp = page.getByRole("tab", { name: "Sign up" });
@@ -36,6 +41,7 @@ for (const [role, a] of Object.entries(ACCOUNTS)) {
     const nav = page.getByRole("navigation", { name: "Main" });
     await expect(nav.getByRole("link")).toHaveText([...a.nav]);
     await expect(nav.locator("[aria-current=page]")).toHaveCount(1);
+    await expect(page.getByText("Iterative Reflection", { exact: true }).first()).toBeVisible();
 
     // Signed-in visits to / and /signin go to the role home.
     await page.goto("/signin");

@@ -4,8 +4,10 @@ import Link from "next/link";
 import { IntakePromptModal } from "@/components/intake/intake-prompt-modal";
 import { RetryPanel } from "@/components/shared/retry-panel";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { feedView } from "@/lib/feed/model";
+import { useReflectedCareers } from "@/lib/experience/queries";
+import { feedProgress, feedView } from "@/lib/feed/model";
 import { useFeed } from "@/lib/feed/queries";
 
 export default function Page() {
@@ -20,6 +22,30 @@ export default function Page() {
         <RetryPanel error={feed.error} onRetry={() => void feed.refetch()} />
       ) : (
         <FeedBody data={feed.data} />
+      )}
+      <FeedProgress />
+    </div>
+  );
+}
+
+/** Intake unlock progress and explored count. Renders nothing while the reflections query loads or fails. */
+function FeedProgress() {
+  const reflections = useReflectedCareers();
+  if (!reflections.data) return null;
+  const { intake, exploredLabel } = feedProgress(reflections.data.content.length);
+  if (!intake && !exploredLabel) return null;
+  return (
+    <div className="space-y-3" data-testid="feed-progress">
+      {intake && (
+        <div className="space-y-1.5" data-testid="intake-progress">
+          <p className="text-sm text-muted-foreground">{intake.label}</p>
+          <ProgressBar fraction={intake.fraction} value={intake.current} max={intake.max} label={intake.label} className="w-full" />
+        </div>
+      )}
+      {exploredLabel && (
+        <p className="text-sm font-medium" data-testid="explored-count">
+          {exploredLabel}
+        </p>
       )}
     </div>
   );

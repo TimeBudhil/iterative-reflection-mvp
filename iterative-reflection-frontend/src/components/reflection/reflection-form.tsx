@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { verdictStyle } from "@/lib/theme/status-styles";
+import { VERDICTS } from "@/lib/verdict";
 import { SegmentedControl } from "@/components/shared/segmented-control";
 import {
   MAX_OPEN_TEXT,
-  VERDICTS,
   canSubmit,
   clientErrors,
   initialDraft,
@@ -83,6 +84,7 @@ export function ReflectionForm({
             <SegmentedControl
               label={q.prompt}
               options={options}
+              mode="range"
               value={draft.scores[q.key]}
               describedBy={scoreError ? `${q.key}-score-error` : undefined}
               onChange={(v) => {
@@ -137,6 +139,8 @@ export function ReflectionForm({
           label="Would I genuinely enjoy this?"
           options={VERDICTS.map((v) => ({ value: v, label: v }))}
           value={draft.verdict}
+          mode="single"
+          singleSelectedClassName={(v) => verdictStyle(v).badge}
           onChange={(v) => {
             touch("verdict");
             setDraft((d) => ({ ...d, verdict: v }));

@@ -4,27 +4,37 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.44 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.556 0 0);
+  /* Grove slots: the single place palette values live. A [data-theme] block can override these. */
+  --background: #edefeb;
+  --surface: #ffffff;
+  --foreground: #121511;
+  --muted: #e2e5df;
+  --muted-foreground: #565c53;
+  --border: #d3d7d0;
+  --primary: #163300;
+  --primary-foreground: #ffffff;
+  --highlight: #f08952;
+  --highlight-text: #a25a0e;
+  --positive: #d6e4e8;
+  --positive-foreground: #163300;
+  --destructive: #e7000b;
+  --destructive-foreground: #ffffff;
+  --ring: #163300;
+
+  /* shadcn variables mapped onto the slots */
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+  --accent: var(--muted);
+  --accent-foreground: var(--foreground);
+  --input: var(--border);
   --radius: 0.625rem;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -36,7 +46,12 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-highlight: var(--highlight);
+  --color-highlight-text: var(--highlight-text);
+  --color-positive: var(--positive);
+  --color-positive-foreground: var(--positive-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);

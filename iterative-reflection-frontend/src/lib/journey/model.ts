@@ -1,5 +1,5 @@
 /** Pure My Journey model (R6.2, R6.3). Everything is computed from the reflections list. */
-export type JourneyVerdict = "YES" | "MAYBE" | "NO";
+import { VERDICTS, type Verdict, type VerdictCounts } from "@/lib/verdict";
 
 export type JourneyReflection = {
   id?: number;
@@ -21,8 +21,18 @@ export const TABS: { id: TabId; label: string }[] = [
 
 const time = (r: JourneyReflection) => (r.updatedAt ? Date.parse(r.updatedAt) || 0 : 0);
 
+export type VerdictShare = { verdict: Verdict; count: number; share: number };
+export type VerdictDistribution = VerdictShare[];
+
+/** Each verdict's count and share (0..1) of all verdicts. Zero-count verdicts are omitted; no reflections gives []. */
+export function verdictDistribution(counts: VerdictCounts): VerdictDistribution {
+  const total = VERDICTS.reduce((n, v) => n + counts[v], 0);
+  if (total === 0) return [];
+  return VERDICTS.filter((v) => counts[v] > 0).map((v) => ({ verdict: v, count: counts[v], share: counts[v] / total }));
+}
+
 export function journeyModel<T extends JourneyReflection>(reflections: readonly T[]) {
-  const counts: Record<JourneyVerdict, number> = { YES: 0, MAYBE: 0, NO: 0 };
+  const counts: VerdictCounts = { YES: 0, MAYBE: 0, NO: 0 };
   const sums = new Map<string, { sum: number; n: number }>();
   for (const r of reflections) {
     if (r.verdict === "YES" || r.verdict === "MAYBE" || r.verdict === "NO") counts[r.verdict]++;
@@ -45,6 +55,7 @@ export function journeyModel<T extends JourneyReflection>(reflections: readonly 
   return {
     total: reflections.length,
     counts,
+    distribution: verdictDistribution(counts),
     averages: [...sums].map(([key, s]) => ({ key, average: s.sum / s.n })),
     tab: (id: TabId): T[] => newestFirst.filter(matches[id]),
     /** For review mode (R4.5) and edit prefill (R5.4). */

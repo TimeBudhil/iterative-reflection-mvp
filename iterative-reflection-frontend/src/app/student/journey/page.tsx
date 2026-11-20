@@ -5,14 +5,11 @@ import Link from "next/link";
 import { QueryView } from "@/components/feedback/query-view";
 import { Card, CardContent } from "@/components/ui/card";
 import { useReflectedCareers, type ReflectionView } from "@/lib/experience/queries";
-import { dimensionLabel, formatAverage, journeyModel, TABS, type TabId } from "@/lib/journey/model";
+import { dimensionLabel, formatAverage, journeyModel, TABS, type TabId, type VerdictDistribution } from "@/lib/journey/model";
 import { cn } from "@/lib/utils";
+import { VerdictBadge } from "@/components/shared/verdict-badge";
+import { verdictStyle } from "@/lib/theme/status-styles";
 
-const BADGE: Record<string, string> = {
-  YES: "bg-green-100 text-green-900",
-  MAYBE: "bg-amber-100 text-amber-900",
-  NO: "bg-red-100 text-red-900",
-};
 
 function Journey({ reflections }: { reflections: ReflectionView[] }) {
   const model = useMemo(() => journeyModel(reflections), [reflections]);
@@ -39,6 +36,7 @@ function Journey({ reflections }: { reflections: ReflectionView[] }) {
         {model.averages.map((a) => (
           <Stat key={a.key} label={`Average ${dimensionLabel(a.key).toLowerCase()}`} value={formatAverage(a.average)} id={`avg-${a.key}`} />
         ))}
+        <VerdictBar distribution={model.distribution} />
       </section>
 
       <div role="tablist" aria-label="Filter careers" className="flex flex-wrap gap-1">
@@ -65,7 +63,7 @@ function Journey({ reflections }: { reflections: ReflectionView[] }) {
               <Link href={`/student/careers/${r.careerId}`} className="min-w-0 flex-1 font-medium underline-offset-2 hover:underline">
                 {r.careerTitle}
               </Link>
-              <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", BADGE[r.verdict ?? ""])}>{r.verdict}</span>
+              <VerdictBadge verdict={r.verdict} className="rounded-full" />
               <time dateTime={r.updatedAt} className="text-sm text-muted-foreground">
                 {r.updatedAt ? new Date(r.updatedAt).toLocaleDateString() : ""}
               </time>
@@ -76,6 +74,26 @@ function Journey({ reflections }: { reflections: ReflectionView[] }) {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+function VerdictBar({ distribution }: { distribution: VerdictDistribution }) {
+  const label = `Verdict split: ${distribution.map((d) => `${d.count} ${d.verdict}`).join(", ")}`;
+  return (
+    <div className="space-y-2 sm:col-span-2 lg:col-span-4">
+      <div role="img" aria-label={label} className="flex h-3 w-full overflow-hidden rounded-full">
+        {distribution.map((d) => (
+          <div key={d.verdict} style={{ width: `${d.share * 100}%` }} className={verdictStyle(d.verdict).bar} />
+        ))}
+      </div>
+      <ul className="flex flex-wrap gap-x-4 text-sm text-muted-foreground">
+        {distribution.map((d) => (
+          <li key={d.verdict}>
+            {d.verdict}: {d.count}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

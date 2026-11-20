@@ -6,7 +6,7 @@ export const metadata = { title: "Terms" };
 export default function TermsPage() {
   return (
     <main className="mx-auto max-w-2xl space-y-4 p-6">
-      <p className="inline-block rounded-md border border-destructive px-2 py-1 text-sm font-medium text-destructive">
+      <p className="inline-block rounded-md border border-destructive bg-surface px-2 py-1 text-sm font-medium text-destructive">
         Draft — not legal text
       </p>
       <h1 className="text-2xl font-semibold">Terms of use</h1>

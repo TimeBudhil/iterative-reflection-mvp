@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { RetryPanel } from "@/components/shared/retry-panel";
 import { BlockView } from "./blocks";
 import { AbandonButton } from "./abandon-button";
@@ -63,9 +65,12 @@ function Pager({ careerId, experience, mode }: { careerId: number; experience: E
     <article className="max-w-3xl space-y-6" data-mode={mode}>
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold">{experience.title}</h1>
-        <p className="text-sm text-muted-foreground" data-testid="page-indicator">
-          {state.label}
-        </p>
+        <div className="flex items-center gap-3">
+          <ProgressBar fraction={state.progress} value={page} max={lastPage} label={state.label} className="flex-1" />
+          <p className="text-sm text-muted-foreground" data-testid="page-indicator">
+            {state.label}
+          </p>
+        </div>
       </header>
 
       <section aria-label={current?.title ?? `Page ${page}`} className="space-y-4">
@@ -97,7 +102,7 @@ function Pager({ careerId, experience, mode }: { careerId: number; experience: E
                 <button
                   type="button"
                   aria-current={n === page ? "page" : undefined}
-                  className={buttonVariants({ variant: n === page ? "default" : "ghost", size: "sm" })}
+                  className={cn(buttonVariants({ variant: n === page ? "outline" : "ghost", size: "sm" }), n === page && "border-2 border-foreground font-semibold")}
                   onClick={() => setPage(n)}
                 >
                   {n}
