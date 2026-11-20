@@ -1,6 +1,7 @@
 /** One place for TanStack Query keys. Each resource adds its keys here; mutations invalidate by these. */
 export const queryKeys = {
   me: ["me"] as const,
+  theme: ["theme"] as const,
   pilotMetrics: (from: string, to: string) => ["admin", "pilot-metrics", from, to] as const,
   adminCounselorsAll: ["admin", "counselors"] as const,
   adminCounselors: (page: number, size: number) => ["admin", "counselors", page, size] as const,

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { signIn } from "./support/helpers";
 
 // Needs the dev backend (demo accounts, password "demo").
@@ -103,4 +103,82 @@ test("a 429 shows the throttle message and leaves the button enabled", async ({ 
   await signIn(page, "student1@demo.example");
   await expect(page.locator("form [role=alert]")).toHaveText("Too many attempts. Try again in 15 minutes.");
   await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeEnabled();
+});
+
+test.describe("app theme", () => {
+  const html = (page: Page) => page.locator("html");
+  const noThemeError = async (page: Page) => {
+    await expect(page.locator("form [role=alert]")).toHaveCount(0);
+    await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /retry|try again/i })).toHaveCount(0);
+  };
+  const presetBody = (presetId: string) => JSON.stringify({ presetId });
+
+  test("with nothing saved, signed-out pages are Grove", async ({ page }) => {
+    for (const path of ["/signin", "/terms", "/change-password"]) {
+      await page.goto(path);
+      await expect(html(page)).toHaveAttribute("data-theme", "grove");
+    }
+  });
+
+  test("a saved preset id is applied on /signin, /terms and /change-password", async ({ page }) => {
+    await page.route("**/api/settings/theme", (route) =>
+      route.fulfill({ contentType: "application/json", body: presetBody("harbor") }),
+    );
+    for (const path of ["/signin", "/terms", "/change-password"]) {
+      await page.goto(path);
+      await expect(html(page)).toHaveAttribute("data-theme", "harbor");
+    }
+  });
+
+  test("an aborted request falls back to Grove with no error shown", async ({ page }) => {
+    await page.route("**/api/settings/theme", (route) => route.abort());
+    await page.goto("/signin");
+    await expect(html(page)).toHaveAttribute("data-theme", "grove");
+    await noThemeError(page);
+  });
+
+  test("a server error falls back to Grove with no error shown", async ({ page }) => {
+    await page.route("**/api/settings/theme", (route) => route.fulfill({ status: 500, body: "{}" }));
+    await page.goto("/signin");
+    await expect(html(page)).toHaveAttribute("data-theme", "grove");
+    await noThemeError(page);
+  });
+
+  test("an unknown id falls back to Grove with no error shown", async ({ page }) => {
+    await page.route("**/api/settings/theme", (route) =>
+      route.fulfill({ contentType: "application/json", body: presetBody("neon") }),
+    );
+    await page.goto("/signin");
+    await expect(html(page)).toHaveAttribute("data-theme", "grove");
+    await noThemeError(page);
+  });
+
+  test("the theme is fetched once per page load: no refetch on focus", async ({ page }) => {
+    let calls = 0;
+    await page.route("**/api/settings/theme", (route) => {
+      calls += 1;
+      return route.fulfill({ contentType: "application/json", body: presetBody("plum") });
+    });
+    await page.goto("/signin");
+    await expect(html(page)).toHaveAttribute("data-theme", "plum");
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event("blur"));
+      window.dispatchEvent(new Event("focus"));
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await page.waitForTimeout(500);
+    expect(calls).toBe(1);
+  });
+
+  test("a signed-in student gets the theme and has no theme control in settings", async ({ page }) => {
+    await page.route("**/api/settings/theme", (route) =>
+      route.fulfill({ contentType: "application/json", body: presetBody("slate") }),
+    );
+    await signIn(page, "student1@demo.example");
+    await expect(html(page)).toHaveAttribute("data-theme", "slate");
+    await page.goto("/student/settings");
+    await expect(page.getByText("Password", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(/app theme/i)).toHaveCount(0);
+  });
 });

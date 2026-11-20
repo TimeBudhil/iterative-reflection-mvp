@@ -66,7 +66,8 @@ class RouteInventoryHttpTest extends HttpIntegrationTest {
 	}
 
 	static boolean isPublic(Route r) {
-		return r.method() == HttpMethod.POST && Set.of("/api/auth/signup", "/api/auth/signin").contains(r.pattern());
+		return (r.method() == HttpMethod.POST && Set.of("/api/auth/signup", "/api/auth/signin").contains(r.pattern()))
+				|| (r.method() == HttpMethod.GET && r.pattern().equals("/api/settings/theme"));
 	}
 
 	/** Roles that may call the route, per the spec; null means "any signed-in role". */

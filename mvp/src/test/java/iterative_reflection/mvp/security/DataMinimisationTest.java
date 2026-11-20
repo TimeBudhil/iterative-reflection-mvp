@@ -58,7 +58,9 @@ class DataMinimisationTest extends HttpIntegrationTest {
 			Map.entry("intake_responses", Set.of("id", "student_id", "created_at", "updated_at")),
 			Map.entry("intake_answers", Set.of("id", "response_id", "question_id", "text_value")),
 			Map.entry("intake_answer_tags", Set.of("answer_id", "tag_id")),
-			Map.entry("intake_dismissals", Set.of("student_id", "dismissed_at"))));
+			Map.entry("intake_dismissals", Set.of("student_id", "dismissed_at")),
+			// update 2: app-wide settings (a preset id only; no personal data)
+			Map.entry("app_settings", Set.of("key", "value_json", "updated_by", "updated_at"))));
 
 	@Test
 	void persistedColumnsAreExactlyTheDocumentedOnes() {

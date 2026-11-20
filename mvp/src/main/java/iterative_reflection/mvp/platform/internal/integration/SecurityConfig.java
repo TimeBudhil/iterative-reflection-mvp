@@ -33,6 +33,8 @@ public class SecurityConfig {
 						.requestMatchers(EndpointRequest.toAnyEndpoint()).hasRole("ADMIN")
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/signin").permitAll()
+						// the app theme is read by every page, signed out too; only GET is open
+						.requestMatchers(HttpMethod.GET, "/api/settings/theme").permitAll()
 						// R1.10: a user who must change a temporary password holds only
 						// PASSWORD_CHANGE_REQUIRED, so only these two routes (and signout, handled by the logout
 						// filter) are open to them; every role rule below denies them
