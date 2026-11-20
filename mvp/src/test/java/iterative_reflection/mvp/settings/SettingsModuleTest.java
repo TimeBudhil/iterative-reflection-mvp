@@ -3,9 +3,12 @@ package iterative_reflection.mvp.settings;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Clock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.PublishedEvents;
@@ -15,6 +18,17 @@ import org.springframework.test.context.ActiveProfiles;
 @ApplicationModuleTest
 @ActiveProfiles("dev")
 class SettingsModuleTest {
+
+	/** The platform module's Clock bean is not part of this module's slice, so tests supply one. */
+	@TestConfiguration
+	static class Seams {
+
+		@Bean
+		Clock clock() {
+			return Clock.systemUTC();
+		}
+
+	}
 
 	@Autowired
 	ThemeSettings theme;

@@ -8,6 +8,9 @@ import java.util.List;
  */
 public interface ThemeSettings {
 
+	/** The {@link SettingChanged#key()} this setting publishes under. */
+	String SETTING_KEY = "app.theme";
+
 	String DEFAULT_PRESET_ID = "grove";
 
 	/** The presets the app offers, default first. */
