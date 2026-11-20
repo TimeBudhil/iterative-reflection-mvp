@@ -7,15 +7,16 @@ import { statusCopy } from "@/lib/api/error-copy";
 import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
 import { barWidths, rangeFromParams, rangeToQuery, rangeToSearch, type VerdictCounts } from "@/lib/metrics/model";
+import { verdictStyle } from "@/lib/theme/status-styles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const VERDICTS = [
-  { key: "YES", label: "Yes", color: "bg-emerald-600" },
-  { key: "MAYBE", label: "Maybe", color: "bg-amber-500" },
-  { key: "NO", label: "No", color: "bg-rose-600" },
+  { key: "YES", label: "Yes" },
+  { key: "MAYBE", label: "Maybe" },
+  { key: "NO", label: "No" },
 ] as const;
 
 export function MetricsView() {
@@ -83,7 +84,7 @@ export function MetricsView() {
                   <li key={v.key} className="grid grid-cols-[4rem_1fr_3rem] items-center gap-3 text-sm">
                     <span>{v.label}</span>
                     <div className="h-6 rounded bg-muted" aria-hidden="true">
-                      <div className={`h-full rounded ${v.color}`} style={{ width: `${widths[v.key]}%` }} />
+                      <div className={`h-full rounded ${verdictStyle(v.key).bar}`} style={{ width: `${widths[v.key]}%` }} />
                     </div>
                     <span className="text-right tabular-nums" data-testid={`verdict-${v.key}`}>{m ? verdicts[v.key] : "-"}</span>
                   </li>
