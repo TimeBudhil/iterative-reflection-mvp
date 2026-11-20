@@ -112,7 +112,6 @@ test.describe("app theme card", () => {
     await expect(card.getByRole("radio", { name: "Grove" })).toBeChecked();
     const save = card.getByRole("button", { name: "Save" });
     await expect(save).toBeDisabled();
-    await expect(card.getByTestId("theme-last-changed")).toHaveCount(0);
     // Swatches and mock cards are hidden from assistive tech.
     await expect(card.locator("[data-testid^=mock-][aria-hidden=true]")).toHaveCount(4);
 

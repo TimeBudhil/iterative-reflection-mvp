@@ -115,6 +115,10 @@ test.describe("app theme", () => {
   const presetBody = (presetId: string) => JSON.stringify({ presetId });
 
   test("with nothing saved, signed-out pages are Grove", async ({ page }) => {
+    // Stubbed: the real setting is global and the admin settings spec changes it (briefly) in a parallel worker.
+    await page.route("**/api/settings/theme", (route) =>
+      route.fulfill({ contentType: "application/json", body: presetBody("grove") }),
+    );
     for (const path of ["/signin", "/terms", "/change-password"]) {
       await page.goto(path);
       await expect(html(page)).toHaveAttribute("data-theme", "grove");
