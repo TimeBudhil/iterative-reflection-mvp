@@ -1,6 +1,9 @@
 package iterative_reflection.mvp.admin.internal.controller;
 
+import iterative_reflection.mvp.admin.internal.services.AdminActivity;
 import iterative_reflection.mvp.counselor.CounselorService;
+import iterative_reflection.mvp.identity.AppUserPrincipal;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import iterative_reflection.mvp.identity.UserService;
 import iterative_reflection.mvp.identity.UserSummary;
 import iterative_reflection.mvp.counselor.CounselorOverview;
@@ -49,19 +52,24 @@ public class AdminCounselorController {
 
 	private final CounselorService counselors;
 
-	AdminCounselorController(UserService users, CounselorService counselors) {
+	private final AdminActivity activity;
+
+	AdminCounselorController(UserService users, CounselorService counselors, AdminActivity activity) {
 		this.users = users;
 		this.counselors = counselors;
+		this.activity = activity;
 	}
 
 	/** One transaction: the user and its profile are created together or not at all. */
 	@PostMapping("/api/admin/counselors")
 	@ResponseStatus(HttpStatus.CREATED)
 	@Transactional
-	CounselorResponse create(@Valid @RequestBody CreateCounselorRequest request) {
+	CounselorResponse create(@Valid @RequestBody CreateCounselorRequest request,
+			@AuthenticationPrincipal AppUserPrincipal me) {
 		UserSummary user = users.createCounselor(request.email(), request.displayName(),
 				request.temporaryPassword());
 		String code = counselors.createProfile(user.id()).joinCode();
+		activity.recordAfterCommit(me.id(), AdminActivity.Action.COUNSELOR_CREATED, Map.of("email", user.email()));
 		return new CounselorResponse(user.id(), user.email(), user.displayName(), code, user.active(),
 				user.mustChangePassword());
 	}
@@ -81,11 +89,17 @@ public class AdminCounselorController {
 
 	@PatchMapping("/api/admin/counselors/{id}")
 	@Transactional
-	CounselorResponse setActive(@PathVariable long id, @Valid @RequestBody SetActiveRequest request) {
+	CounselorResponse setActive(@PathVariable long id, @Valid @RequestBody SetActiveRequest request,
+			@AuthenticationPrincipal AppUserPrincipal me) {
 		UserSummary existing = users.findById(id).filter(u -> u.role() == Role.COUNSELOR)
 				.orElseThrow(() -> new ErrorResponseException(HttpStatus.NOT_FOUND,
 						ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "No such counselor."), null));
 		UserSummary user = users.setActive(existing.id(), request.active());
+		if (existing.active() != request.active()) {
+			activity.recordAfterCommit(me.id(),
+					request.active() ? AdminActivity.Action.COUNSELOR_REACTIVATED : AdminActivity.Action.COUNSELOR_DEACTIVATED,
+					Map.of("email", user.email()));
+		}
 		String code = counselors.findByUserId(id).map(p -> p.joinCode()).orElse(null);
 		return new CounselorResponse(user.id(), user.email(), user.displayName(), code, user.active(),
 				user.mustChangePassword());

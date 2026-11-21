@@ -204,10 +204,10 @@ _Last updated: 2026-11-18_
 
 ## Visual identity: Grove (update 1)
 
-- **Palette and slots:** Grove is `background #edefeb`, `surface #ffffff`, `foreground #121511`, `primary #163300` (+ white text), `highlight #f08952`, `highlight-text #a25a0e`, `positive #d6e4e8` (+ `#163300` text), neutral `muted`/`muted-foreground`, and `destructive` red (`#e7000b`) with `destructive-foreground` `#ffffff`. Slots: background, surface, foreground, muted, muted-foreground, border, primary, primary-foreground, highlight, highlight-text, positive, positive-foreground, destructive, destructive-foreground, ring. Components use slot names only; raw values live in `globals.css`, and `tokens.test.ts` guards both the AA pairs and the raw-color rule. Keep the slot names stable: update 2 presets must define every slot.
+- **Palette and slots:** Grove is `background #edefeb`, `surface #ffffff`, `foreground #121511`, `primary #315c3b` (+ white text), `highlight #e5c96b`, `highlight-text #7f6716`, `positive #d6e4e8` (+ `#315c3b` text) (primary and highlight revised in update 2; update 1 shipped `#163300` / `#f08952` / `#a25a0e`), neutral `muted`/`muted-foreground`, and `destructive` red (`#e7000b`) with `destructive-foreground` `#ffffff`. Slots: background, surface, foreground, muted, muted-foreground, border, primary, primary-foreground, highlight, highlight-text, positive, positive-foreground, destructive, destructive-foreground, ring. Components use slot names only; raw values live in `globals.css`, and `tokens.test.ts` guards both the AA pairs and the raw-color rule. Keep the slot names stable: update 2 presets must define every slot.
 - **Lime dropped as a leading color:** forest green with lime is a well-known fintech brand's signature. Leading with orange keeps Grove distinct.
 - **NO isn't red:** a NO verdict is a legitimate, useful answer ("not for me"), not an error. It's neutral `muted`; red is kept for destructive actions and Denied.
-- **`highlight` is fill-only:** `#f08952` is about 2.5:1 on white, below the 3:1 bar for meaningful graphics and far below 4.5:1 for text. It is used for bars and always paired with text; orange text uses `highlight-text`.
+- **`highlight` is fill-only:** the highlight (update 1 `#f08952` about 2.5:1 on white; now gold `#e5c96b`, about 1.6:1) is, below the 3:1 bar for meaningful graphics and far below 4.5:1 for text. It is used for bars and always paired with text; orange text uses `highlight-text`.
 - **MAYBE chip is a real tint, painted over an opaque surface:** a translucent `highlight` tint fails AA over the page `background` (10% gives 4.21:1) but passes over white (10% gives 4.81:1). The chip therefore stacks `bg-surface` with a `highlight/10` gradient layer and a `highlight` border, so it reads about 4.8:1 wherever it sits. `tokens.test.ts` asserts highlight-text on that blended tint. (This replaces the earlier outlined-chip workaround.) The check also covers the `muted-foreground` pairs used by NO chips.
 - **Selected verdict is marked without color alone:** in single-select segmented controls the selected option gets a 2px `foreground` outline and a check icon on top of its verdict fill (selected NO is only `muted`, about 1.1:1 on the page, so the fill alone was not enough). The outline is `foreground` on `background`/`surface`, asserted at 3:1 or better (WCAG 1.4.11). The outline is separate from the focus ring so both show.
 - **`destructive-foreground` slot:** destructive buttons used `primary-foreground`, which only works while the two happen to match. A separate slot (Grove `#ffffff`) is added, with a contrast pair in the token check. Update 2 presets must define it.
@@ -215,3 +215,34 @@ _Last updated: 2026-11-18_
 - **One verdict type:** `src/lib/verdict.ts` exports `VERDICTS`, `Verdict`, `VerdictCounts` and `isVerdict`; `verdictStyle` takes a `Verdict`, and `VerdictBadge` renders nothing for unknown values instead of falling back to NO.
 - **ProgressBar takes a fraction:** the bar fill comes from the model's `progress` / `fraction`; `value` and `max` are only the ARIA numbers.
 - **Explored count has no total:** no endpoint exposes the number of careers, and the backend is frozen. "n careers explored" counts reflections (abandons are invisible to students) and is hidden at 0. An "of N" total waits for update 3.
+
+## Theme presets (update 2)
+
+- **Four value sets, same 15 slots:** all share `surface #ffffff` and `destructive #e7000b` / `destructive-foreground #ffffff`. Each also passes the token check pairs and the MAYBE-chip tint check.
+
+  | Preset | background | foreground | primary | highlight | highlight-text | positive (+ text) | muted / muted-foreground | border |
+  |--------|-----------|-----------|---------|-----------|----------------|-------------------|--------------------------|--------|
+  | grove (default) | `#edefeb` | `#121511` | `#315c3b` | `#e5c96b` | `#7f6716` | `#d6e4e8` (`#315c3b`) | `#e2e5df` / `#565c53` | `#d3d7d0` |
+  | harbor | `#ebeff1` | `#10181d` | `#12344d` | `#3aa99f` | `#17716a` | `#efe5d2` (`#12344d`) | `#dfe5e8` / `#4f5d65` | `#ced7dc` |
+  | plum | `#f1edf0` | `#1a1219` | `#63316b` | `#e9b96e` | `#916116` | `#e4e0ef` (`#63316b`) | `#e7e0e5` / `#5e5260` | `#dacfd7` |
+  | slate | `#eeeff1` | `#15171a` | `#2b3038` | `#6f9fd8` | `#2f5f9a` | `#dfe8df` (`#2b3038`) | `#e2e4e7` / `#555a61` | `#d2d5da` |
+
+  `ring` equals `primary` in every preset; `primary-foreground` is white. Grove and Plum `primary` / `highlight` were chosen by the developer on 2026-11-20 (Grove `#315c3b` + `#e5c96b`, Plum `#63316b` + `#e9b96e`); their `highlight-text` values are the same hue darkened until they pass AA on the background, surface and MAYBE tint. The backend stores only the id, so palettes live in `globals.css` alone. The hex question in `REQUIREMENTS.md` is closed: these are the values.
+- **Theme loading:** `GET /api/settings/theme` is fetched once per full page load (`staleTime`/`gcTime` infinite, no retry, no focus or reconnect refetch, no polling). `applyTheme()` in `src/lib/theme/presets.ts` is the only place that sets `data-theme`.
+- **`localStorage` hint (`ir-theme`):** an inline head script (`THEME_HEAD_SCRIPT`) applies the last-seen id before first paint; the server answer then overwrites attribute and hint. The hint holds only a preset id, never anything auth-related, and unknown or blocked storage counts as no hint.
+- **Fallback to grove:** a failed request, an unknown id or a missing value resolves to `grove` with no toast, error or retry panel.
+- **Saves apply immediately:** on a successful save the admin's page updates with no reload (attribute, hint and both theme queries). Other users see it on their next full load; an open tab keeps its theme.
+- **Denied badge is a solid fill (found in close-out):** the Denied outcome badge used `bg-destructive/10 text-destructive`, which failed color contrast on `/admin/audit` (destructive text on a faint tint over the tinted page background). It now uses `bg-destructive text-destructive-foreground`, a pair the token check already asserts for all four presets.
+
+### N5.3 brand check
+
+**Draft, awaiting developer sign-off.** Drafted from general knowledge of well-known brand palettes (no live lookup), so treat the "nearest brands" column as a prompt for review rather than a legal opinion. Already avoided: plum + orange, plum + gold, charcoal + yellow, and forest green + lime.
+
+| Preset | `primary` + `highlight` | Nearest well-known pairings | Why it isn't a look-alike |
+|--------|-------------------------|-----------------------------|---------------------------|
+| grove | forest green `#315c3b` + soft gold `#e5c96b` | Green Bay Packers (dark green `#203731` + gold `#ffb612`); John Deere (green `#367c2b` + yellow `#ffde00`); Oregon Ducks (green + yellow); Wise (dark green + lime, dropped in update 1) | **Needs a look (developer's choice, 2026-11-20).** Green + gold is a well-known sports and agriculture pairing. Grove's gold is muted and used as a fill only, and the green is grayer than Deere's, so it reads as earthy rather than branded, but it is closer to the Packers than the old orange was |
+| harbor | navy `#12344d` + teal `#3aa99f` (sand `positive`) | Corporate navy + red (Capital One, Citi); navy + bright blue (many banks and SaaS); teal-forward brands such as Xero | The accent is a muted teal on a dark steel navy, with a warm sand `positive`; no red, no bright blue, and no brand uses this trio |
+| plum | plum `#63316b` + amber-gold `#e9b96e` (lavender `positive`) | Cadbury (purple + gold); Crown Royal (purple + gold); LSU and the Minnesota Vikings (purple + gold); Slack (aubergine `#4a154b`) | **Needs a look (developer's choice, 2026-11-20).** This is the plum + gold pairing listed above as already avoided. The plum is lighter and redder than Cadbury's purple, and the gold is a soft amber fill, not a metallic logo gold. Moving `primary` away from `#4a1f4f` also clears the Slack resemblance |
+| slate | charcoal-slate `#2b3038` + sky blue `#6f9fd8` (sage `positive`) | GitHub (dark gray with blue links); Linear and Vercel-style dark neutrals; Facebook and X (blue alone) | The slate is a neutral and the blue is a soft, light sky blue used as a fill only. Neutral-dark plus blue is a generic pairing, not a distinctive brand mark |
+
+Sign-off: _pending developer._

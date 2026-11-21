@@ -52,6 +52,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/settings/theme": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get"];
+        put: operations["put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/students/me/counselors": {
         parameters: {
             query?: never;
@@ -228,6 +244,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings/theme": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["theme"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reflection-questions": {
         parameters: {
             query?: never;
@@ -363,7 +395,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["get"];
+        get: operations["get_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -380,6 +412,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["audit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["activity"];
         put?: never;
         post?: never;
         delete?: never;
@@ -459,6 +507,15 @@ export interface components {
             verdict?: "YES" | "MAYBE" | "NO";
             /** Format: int32 */
             versionNumber?: number;
+        };
+        ThemeRequest: {
+            presetId: string;
+        };
+        AdminThemeResponse: {
+            presetId?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+            updatedByName?: string;
         };
         LinkRequest: {
             code: string;
@@ -570,6 +627,9 @@ export interface components {
         PagedModelCounselorLink: {
             content: components["schemas"]["CounselorLink"][];
             page: components["schemas"]["PageMetadata"];
+        };
+        ThemeResponse: {
+            presetId?: string;
         };
         QuestionView: {
             /** Format: int64 */
@@ -764,6 +824,21 @@ export interface components {
             content: components["schemas"]["AuditEntry"][];
             page: components["schemas"]["PageMetadata"];
         };
+        ActivityEntry: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            adminName?: string;
+            action?: string;
+            detail?: {
+                [key: string]: string;
+            };
+        };
+        PagedModelActivityEntry: {
+            content: components["schemas"]["ActivityEntry"][];
+            page: components["schemas"]["PageMetadata"];
+        };
     };
     responses: never;
     parameters: never;
@@ -911,6 +986,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["SubmitResponse"];
+                };
+            };
+        };
+    };
+    get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdminThemeResponse"];
+                };
+            };
+        };
+    };
+    put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThemeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdminThemeResponse"];
                 };
             };
         };
@@ -1230,6 +1349,26 @@ export interface operations {
             };
         };
     };
+    theme: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ThemeResponse"];
+                };
+            };
+        };
+    };
     questions: {
         parameters: {
             query?: never;
@@ -1400,7 +1539,7 @@ export interface operations {
             };
         };
     };
-    get: {
+    get_1: {
         parameters: {
             query?: {
                 from?: string;
@@ -1442,6 +1581,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PagedModelAuditEntry"];
+                };
+            };
+        };
+    };
+    activity: {
+        parameters: {
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagedModelActivityEntry"];
                 };
             };
         };

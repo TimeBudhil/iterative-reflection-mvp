@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { statusCopy } from "@/lib/api/error-copy";
+import { errorStatus, statusCopy } from "@/lib/api/error-copy";
 import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
 import { barWidths, rangeFromParams, rangeToQuery, rangeToSearch } from "@/lib/metrics/model";
@@ -61,7 +61,7 @@ export function MetricsView() {
 
       {q.isError ? (
         <p role="alert" className="text-sm text-destructive">
-          {statusCopy((q.error as { status?: number }).status ?? 0)}
+          {statusCopy(errorStatus(q.error))}
         </p>
       ) : (
         <>

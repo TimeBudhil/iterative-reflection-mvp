@@ -31,6 +31,10 @@ type Slot = (typeof SLOTS)[number];
 /** Each preset is a selector whose block defines the slot values. Update 2 adds [data-theme] entries. */
 const PRESETS: { name: string; selector: string }[] = [
   { name: "grove", selector: ":root" },
+  { name: "grove (by name)", selector: '[data-theme="grove"]' },
+  { name: "harbor", selector: '[data-theme="harbor"]' },
+  { name: "plum", selector: '[data-theme="plum"]' },
+  { name: "slate", selector: '[data-theme="slate"]' },
 ];
 
 /** Pairs (text, ground) that must reach WCAG AA for normal text. */
@@ -41,7 +45,7 @@ const AA_PAIRS: [Slot, Slot][] = [
   ["highlight-text", "background"],
   ["highlight-text", "surface"],
   ["positive-foreground", "positive"],
-  ["destructive-foreground", "destructive"],
+  ["destructive-foreground", "destructive"], // also the Denied outcome badge
   // Verdict chips: YES = positive pair above, MAYBE = highlight-text on a highlight tint (below), NO = muted pair.
   ["muted-foreground", "muted"],
   ["muted-foreground", "background"],
@@ -50,7 +54,7 @@ const AA_PAIRS: [Slot, Slot][] = [
 
 function blockFor(selector: string): string {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`).exec(css);
+  const match = new RegExp(`(?:^|\\n)(?:[^{}]*,\\s*)?${escaped}\\s*(?:,[^{}]*)?\\{([^}]*)\\}`).exec(css);
   if (!match) throw new Error(`No ${selector} block in globals.css`);
   return match[1];
 }
@@ -156,12 +160,12 @@ describe("Grove values", () => {
     expect(v.background.toLowerCase()).toBe("#edefeb");
     expect(v.surface.toLowerCase()).toBe("#ffffff");
     expect(v.foreground.toLowerCase()).toBe("#121511");
-    expect(v.primary).toBe("#163300");
+    expect(v.primary).toBe("#315c3b");
     expect(v["primary-foreground"].toLowerCase()).toBe("#ffffff");
-    expect(v.highlight.toLowerCase()).toBe("#f08952");
-    expect(v["highlight-text"].toLowerCase()).toBe("#a25a0e");
+    expect(v.highlight.toLowerCase()).toBe("#e5c96b");
+    expect(v["highlight-text"].toLowerCase()).toBe("#7f6716");
     expect(v.positive.toLowerCase()).toBe("#d6e4e8");
-    expect(v["positive-foreground"].toLowerCase()).toBe("#163300");
+    expect(v["positive-foreground"].toLowerCase()).toBe("#315c3b");
     expect(v["destructive-foreground"].toLowerCase()).toBe("#ffffff");
   });
 });
