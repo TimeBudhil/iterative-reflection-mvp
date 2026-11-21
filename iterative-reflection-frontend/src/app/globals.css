@@ -12,15 +12,15 @@
   --muted: #e2e5df;
   --muted-foreground: #565c53;
   --border: #d3d7d0;
-  --primary: #163300;
+  --primary: #315c3b;
   --primary-foreground: #ffffff;
-  --highlight: #f08952;
-  --highlight-text: #a25a0e;
+  --highlight: #e5c96b;
+  --highlight-text: #7f6716;
   --positive: #d6e4e8;
-  --positive-foreground: #163300;
+  --positive-foreground: #315c3b;
   --destructive: #e7000b;
   --destructive-foreground: #ffffff;
-  --ring: #163300;
+  --ring: #315c3b;
 
   /* shadcn variables mapped onto the slots */
   --card: var(--surface);
@@ -58,15 +58,15 @@
   --muted: #e7e0e5;
   --muted-foreground: #5e5260;
   --border: #dacfd7;
-  --primary: #4a1f4f;
+  --primary: #63316b;
   --primary-foreground: #ffffff;
-  --highlight: #6bb39b;
-  --highlight-text: #2f7360;
+  --highlight: #e9b96e;
+  --highlight-text: #916116;
   --positive: #e4e0ef;
-  --positive-foreground: #4a1f4f;
+  --positive-foreground: #63316b;
   --destructive: #e7000b;
   --destructive-foreground: #ffffff;
-  --ring: #4a1f4f;
+  --ring: #63316b;
 }
 
 [data-theme="slate"] {

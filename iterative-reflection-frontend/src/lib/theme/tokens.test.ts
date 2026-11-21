@@ -160,12 +160,12 @@ describe("Grove values", () => {
     expect(v.background.toLowerCase()).toBe("#edefeb");
     expect(v.surface.toLowerCase()).toBe("#ffffff");
     expect(v.foreground.toLowerCase()).toBe("#121511");
-    expect(v.primary).toBe("#163300");
+    expect(v.primary).toBe("#315c3b");
     expect(v["primary-foreground"].toLowerCase()).toBe("#ffffff");
-    expect(v.highlight.toLowerCase()).toBe("#f08952");
-    expect(v["highlight-text"].toLowerCase()).toBe("#a25a0e");
+    expect(v.highlight.toLowerCase()).toBe("#e5c96b");
+    expect(v["highlight-text"].toLowerCase()).toBe("#7f6716");
     expect(v.positive.toLowerCase()).toBe("#d6e4e8");
-    expect(v["positive-foreground"].toLowerCase()).toBe("#163300");
+    expect(v["positive-foreground"].toLowerCase()).toBe("#315c3b");
     expect(v["destructive-foreground"].toLowerCase()).toBe("#ffffff");
   });
 });
